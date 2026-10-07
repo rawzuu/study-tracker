@@ -201,6 +201,7 @@ export function ExamModal({ exam, onClose }: { exam?: Exam; onClose: () => void 
             <button
               className="btn danger left"
               onClick={() => {
+                if (!confirm(`Smazat zkoušku „${exam.name}“? Smažou se i její budoucí naplánovaná opakování.`)) return;
                 remove('exams', exam.id);
                 const now = Date.now();
                 update((d) => ({

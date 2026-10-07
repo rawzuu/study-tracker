@@ -5,7 +5,7 @@ import { useStore } from '../../data/store';
 import { Exam, PlanBlock, Session, alive } from '../../data/schema';
 import { Bar, Empty, Modal, Segmented } from '../../components/ui';
 import { MonthView } from './MonthView';
-import { DAY, HOUR, MIN, addDays, dayKey, fmtDate, fmtDuration, fmtTime, parseDayKey, plural, startOfDay, startOfMonth, startOfWeek, WEEKDAYS_SHORT } from '../../lib/time';
+import { DAY, HOUR, MIN, addDays, atMinutes, dayKey, fmtDate, fmtDuration, fmtTime, parseDayKey, plural, minutesOfDay, startOfDay, startOfMonth, startOfWeek, WEEKDAYS_SHORT } from '../../lib/time';
 import { bySubject, inRange } from '../../lib/stats';
 import { SubjectTag } from '../subjects/SubjectSelect';
 import { SessionModal } from '../sessions/HistoryPage';
@@ -147,7 +147,7 @@ export function PlannerPage() {
     if ((e.target as HTMLElement).closest('.cal-item')) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const mins = Math.floor((((e.clientY - rect.top) / HOUR_H) * 60) / 30) * 30 + hourFrom * 60;
-    const start = day + mins * MIN;
+    const start = atMinutes(day, mins);
     if (layer === 'plan') setModal({ kind: 'block', start });
     else if (layer === 'done') setModal({ kind: 'session', start });
     else setModal({ kind: 'choose', start });
@@ -325,10 +325,10 @@ export function PlannerPage() {
                           {Array.from({ length: HOUR_TO - hourFrom }, (_, i) => (
                             <div key={i} className="hour-line" style={{ top: i * HOUR_H }} />
                           ))}
-                          {d === today && <div className="now-line" style={{ top: ((now - d) / HOUR - hourFrom) * HOUR_H }} />}
+                          {d === today && <div className="now-line" style={{ top: (minutesOfDay(now) / 60 - hourFrom) * HOUR_H }} />}
                           {dayItems.map((it) => {
                             const s = subj.get(it.subjectId);
-                            const startMin = (it.start - d) / MIN - hourFrom * 60;
+                            const startMin = minutesOfDay(it.start) - hourFrom * 60;
                             const durMin = Math.max(1, (it.end - it.start) / MIN);
                             const { lane, lanes } = lay.get(it.id)!;
                             const dragging = it.block && drag?.id === it.block.id;

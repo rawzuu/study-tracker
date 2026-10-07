@@ -8,17 +8,10 @@ import { NOISE_LABEL, startNoise, stopNoise } from '../../lib/noise';
 import { unlockAudio } from '../../lib/alerts';
 import { Segmented } from '../../components/ui';
 import { SubjectSelect } from '../subjects/SubjectSelect';
-import { BREAK_TIPS, Evidence, allModes } from './modes';
+import { BREAK_TIPS, allModes } from './modes';
 import { useTimer } from './TimerContext';
 import { NextUpInline } from '../recommend/NextUp';
 import './timer.css';
-
-const EVIDENCE_CHIP: Record<Evidence, string> = {
-  silné: 'ok',
-  střední: 'accent',
-  slabé: 'warn',
-  nástroj: '',
-};
 
 /** Ciferník s ryskami po minutách – jako stopky. */
 export function TimerRing({ size = 340 }: { size?: number }) {
@@ -175,7 +168,6 @@ function NoiseControl() {
         <h2 className="row" style={{ gap: 8 }}>
           <Headphones size={15} /> Šum na soustředění
         </h2>
-        <span className="chip warn">důkazy: smíšené</span>
       </div>
       <div className="stack">
         <Segmented<NoiseType>
@@ -201,10 +193,7 @@ function NoiseControl() {
             )}
           </div>
         )}
-        <p className="small faint">
-          Hraje automaticky jen během bloku učení. Některým lidem (hlavně s ADHD) šum pomáhá udržet pozornost, jiným spíš vadí.
-          Hnědý je nejhlubší a nejméně rušivý.
-        </p>
+        <p className="small faint">Hraje automaticky jen během bloku učení. Hnědý je nejhlubší a nejméně rušivý.</p>
       </div>
     </div>
   );
@@ -213,7 +202,7 @@ function NoiseControl() {
 export function TimerPage() {
   const { data, setSettings } = useStore();
   const t = useTimer();
-  const { state, mode } = t;
+  const { state } = t;
   const modes = useMemo(() => allModes(data.presets), [data.presets]);
   const [zen, setZen] = useState(false);
   const [tip] = useState(() => Math.floor(Math.random() * BREAK_TIPS.length));
@@ -341,15 +330,6 @@ export function TimerPage() {
                     <span className="mode-tag num">{m.tagline}</span>
                   </button>
                 ))}
-              </div>
-              <div className="mode-info">
-                <div className="row between">
-                  <span className="label">o metodě</span>
-                  <span className={`chip ${EVIDENCE_CHIP[mode.evidence]}`}>
-                    {mode.evidence === 'nástroj' ? 'nástroj' : `důkazy: ${mode.evidence}`}
-                  </span>
-                </div>
-                <p className="small muted">{mode.description}</p>
               </div>
             </div>
 

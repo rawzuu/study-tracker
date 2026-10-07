@@ -1,17 +1,27 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { get, set } from 'idb-keyval';
+import { get, set, update as idbUpdate } from 'idb-keyval';
 import { AppData, CollectionKey, Entity, SCHEMA_VERSION, Settings, emptyData } from './schema';
 import { migrate, needsMigration } from './migrations';
-import { mergeData, serialize } from './merge';
+import { hasNewer, mergeData, serialize } from './merge';
 import { GithubError, fetchRemote, loadGithubConfig, pushRemote } from './github';
 
 /**
  * Jediné místo, přes které aplikace čte a zapisuje data.
  * - lokálně: IndexedDB (rychlé, funguje offline)
  * - vzdáleně: soukromé GitHub repo (bezpečná kopie + historie + víc zařízení)
+ *
+ * Víc otevřených záložek (nebo PWA + záložka) sdílí jednu IndexedDB. Proto se při ukládání
+ * data vždy SLOUČÍ s tím, co tam mezitím zapsala jiná záložka (nikdy se nepřepíší),
+ * a ostatní záložky se o změně dozví přes BroadcastChannel.
  */
 
 const DB_KEY = 'appData';
+const CHANNEL = 'st-data';
+
+/** Zapíše data do IndexedDB sloučená s uloženým stavem – změny z jiné záložky se neztratí. */
+function persist(data: AppData): Promise<void> {
+  return idbUpdate<AppData>(DB_KEY, (stored) => (stored ? mergeData(data, migrate(stored)) : data));
+}
 
 export type SyncState =
   | { status: 'off' }
@@ -73,13 +83,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
+  const ready = data !== null;
+
   // ---------- ukládání do IndexedDB ----------
+  const channel = useRef<BroadcastChannel | null>(null);
   const saveTimer = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (!data) return;
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      set(DB_KEY, data).catch((e) => console.error('Uložení selhalo', e));
+      persist(data)
+        .then(() => channel.current?.postMessage('saved'))
+        .catch((e) => console.error('Uložení selhalo', e));
     }, 150);
     try {
       localStorage.setItem('st.theme', data.settings.theme);
@@ -90,11 +105,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const flush = () => {
-      if (dataRef.current) set(DB_KEY, dataRef.current).catch(() => {});
+      if (dataRef.current) persist(dataRef.current).catch(() => {});
     };
     window.addEventListener('pagehide', flush);
     return () => window.removeEventListener('pagehide', flush);
   }, []);
+
+  // ---------- změny z jiných záložek ----------
+  useEffect(() => {
+    if (!ready) return;
+    const pull = async () => {
+      try {
+        const raw = await get(DB_KEY);
+        if (!raw) return;
+        const stored = migrate(raw);
+        setData((cur) => (cur && hasNewer(cur, stored) ? mergeData(cur, stored) : cur));
+      } catch (e) {
+        console.error('Načtení změn z jiné záložky selhalo', e);
+      }
+    };
+    if (typeof BroadcastChannel !== 'undefined') {
+      channel.current = new BroadcastChannel(CHANNEL);
+      channel.current.onmessage = () => void pull();
+    }
+    const onVisible = () => document.visibilityState === 'visible' && void pull();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      channel.current?.close();
+      channel.current = null;
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [ready]);
 
   // ---------- synchronizace s GitHubem ----------
   const syncing = useRef(false);
@@ -158,7 +199,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     syncTimer.current = window.setTimeout(() => void syncNow(), 3000);
   }, [syncNow]);
 
-  const ready = data !== null;
   useEffect(() => {
     if (!ready) return;
     void syncNow();

@@ -1,7 +1,7 @@
 import { AppData, PlanBlock, alive } from '../data/schema';
 import { Activity, Recommendation, recommend } from './recommend';
 import { bestWindow } from './stats';
-import { DAY, HOUR, MIN, addDays, startOfDay } from './time';
+import { DAY, HOUR, MIN, addDays, atMinutes, startOfDay } from './time';
 
 /**
  * Ranní plánování: navrhne bloky na zbytek dne.
@@ -30,7 +30,7 @@ const GAP = 10 * MIN;
 
 function hm(day: number, v: string): number {
   const [h, m] = v.split(':').map(Number);
-  return day + (h || 0) * HOUR + (m || 0) * MIN;
+  return atMinutes(day, (h || 0) * 60 + (m || 0));
 }
 
 /** Nastavené rozmezí dne (bez ohledu na aktuální čas). */
@@ -117,7 +117,7 @@ export function place(data: AppData, items: DayPlanItem[], now = Date.now()): Da
   const { day, from, to } = dayBounds(data, now);
   const busy = busyIntervals(data, day, new Set(items.filter((i) => i.carry).map((i) => i.carry!.id)));
   const peak = bestWindow(alive(data.sessions).filter((s) => s.start > now - 60 * DAY && s.mode !== 'anki'));
-  const peakFrom = peak ? day + peak.from * HOUR : null;
+  const peakFrom = peak ? atMinutes(day, peak.from * 60) : null;
   const peakTo = peakFrom != null ? peakFrom + 2 * HOUR : null;
   const deep = (a: DayPlanItem['activity']) => a === 'exam' || a === 'new' || a === 'continue';
 

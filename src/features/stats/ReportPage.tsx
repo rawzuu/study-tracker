@@ -244,7 +244,7 @@ export function ReportPage() {
                     <tbody>
                       {subjRows.map((r) => (
                         <tr key={r.id}>
-                          <td>
+                          <td className="name">
                             <span className="row" style={{ gap: 7 }}>
                               <span className="dot" style={{ background: subjById.get(r.id)?.color }} />
                               <span className="ellipsis">{subjById.get(r.id)?.name ?? '?'}</span>

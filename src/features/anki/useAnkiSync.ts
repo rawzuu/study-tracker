@@ -2,7 +2,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useStore } from '../../data/store';
 import { AppData, Session } from '../../data/schema';
 import { AnkiError, clusterReviews, fetchAnki } from '../../lib/anki';
-import { DAY, startOfDay } from '../../lib/time';
+import { addDays, startOfDay } from '../../lib/time';
 
 /**
  * Synchronizace s Anki: každé 2 minuty (a při návratu na stránku) načte počty k opakování
@@ -40,22 +40,24 @@ export function syncAnkiNow(fullHistory = false) {
   requestRun?.(fullHistory);
 }
 
-type Store = ReturnType<typeof useStore>;
+type Store = Pick<ReturnType<typeof useStore>, 'upsert' | 'upsertMany' | 'remove'>;
 
 /** Poslední známý počet dnešních opakování – když se nezmění, historie se nestahuje znovu. */
 let lastSeen: { day: number; reviewedToday: number } | null = null;
 
-async function run(store: Store, data: AppData, fullHistory: boolean) {
+/** Jedno kolo synchronizace (exportováno kvůli testům). */
+export async function runAnkiSync(store: Store, data: AppData, fullHistory: boolean) {
   const cfg = data.settings.anki;
   const hasAnkiSessions = data.sessions.some((s) => s.mode === 'anki' && !s.deletedAt);
   const days = fullHistory || !hasAnkiSessions ? cfg.importDays : 2;
-  const since = startOfDay(Date.now()) - (days - 1) * DAY;
+  const since = addDays(startOfDay(Date.now()), -(days - 1));
 
   setStatus({ state: 'syncing' });
   try {
     const day = startOfDay(Date.now());
     const known = !fullHistory && lastSeen?.day === day ? lastSeen.reviewedToday : undefined;
-    const res = await fetchAnki(since, { knownReviewedToday: known });
+    // Historii bereme o den delší, aby se blok přes půlnoc na hranici okna nerozpůlil (a nezapočítal dvakrát).
+    const res = await fetchAnki(addDays(since, -1), { knownReviewedToday: known });
 
     // Snapshot – jen když se změnila čísla (aby se zbytečně necommitovalo na GitHub)
     const today = startOfDay(Date.now());
@@ -72,7 +74,8 @@ async function run(store: Store, data: AppData, fullHistory: boolean) {
       if (unmapped && !data.subjects.some((s) => s.id === ANKI_SUBJECT_ID && !s.deletedAt)) {
         store.upsert('subjects', { id: ANKI_SUBJECT_ID, name: 'Anki', color: '#9ca3af', weeklyGoalMin: 0, archived: false });
       }
-      const blocks = clusterReviews(res.reviews).filter((b) => b.durationMs >= 30_000);
+      // Okno spravuje bloky, které do něj aspoň zasahují (i ty začaté před půlnocí).
+      const blocks = clusterReviews(res.reviews).filter((b) => b.durationMs >= 30_000 && b.end >= since);
       const wanted = new Map<string, Omit<Session, 'createdAt' | 'updatedAt'>>();
       for (const b of blocks) {
         const id = `anki-${b.deck.replace(/[^\p{L}\p{N}]+/gu, '_')}-${b.start}`;
@@ -88,14 +91,16 @@ async function run(store: Store, data: AppData, fullHistory: boolean) {
           note: `${b.count} karet`,
         });
       }
-      const existing = data.sessions.filter((s) => s.mode === 'anki' && s.start >= since);
+      const existing = data.sessions.filter((s) => s.mode === 'anki' && (s.start >= since || s.end >= since));
       const changed = [...wanted.values()].filter((w) => {
         const e = existing.find((x) => x.id === w.id);
-        return !e || e.deletedAt || e.end !== w.end || e.durationSec !== w.durationSec || e.subjectId !== w.subjectId;
+        if (e?.deletedAt) return false; // smazané sezení nevracíme a zbytečně ho nepřepisujeme
+        return !e || e.end !== w.end || e.durationSec !== w.durationSec || e.subjectId !== w.subjectId;
       });
       if (changed.length) store.upsertMany('sessions', changed);
-      // Bloky, které po přepočtu už neexistují (v daném okně), smažeme
-      for (const e of existing) if (!e.deletedAt && !wanted.has(e.id)) store.remove('sessions', e.id);
+      // Bloky, které po přepočtu už neexistují (v daném okně), smažeme. Pojistka: když Anki nevrátí
+      // vůbec žádnou historii (jiný profil, čerstvá instalace), nemažeme nic.
+      if (res.reviews.length > 0) for (const e of existing) if (!e.deletedAt && !wanted.has(e.id)) store.remove('sessions', e.id);
     }
     lastSeen = { day, reviewedToday: res.reviewedToday };
     setStatus({ state: 'ok', at: Date.now() });
@@ -122,7 +127,7 @@ export function useAnkiSync() {
       if (busy.current) return;
       busy.current = true;
       try {
-        await run(ref.current, ref.current.data, full);
+        await runAnkiSync(ref.current, ref.current.data, full);
       } finally {
         busy.current = false;
       }

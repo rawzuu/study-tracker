@@ -6,7 +6,7 @@ Osobní aplikace na sledování času učení: časovače podložené výzkumem,
 
 ## Funkce
 
-- **Časovače:** Pomodoro (25/5), Dlouhé Pomodoro (50/10), 52/17, Ultradiánní blok (90/20), Flowtime, stopky a vlastní režimy. U každého je uvedeno, z čeho vychází a jak silné jsou důkazy.
+- **Časovače:** Pomodoro (25/5), Dlouhé Pomodoro (50/10), 52/17, Ultradiánní blok (90/20), Flowtime, stopky a vlastní režimy.
 - **Záznam sezení:** předmět, téma, čistý čas, hodnocení soustředění (1–5), počet vyrušení a ruční zápis.
 - **Statistiky:** heatmapa roku, trend s 7denním průměrem, předměty v čase, rozložení, den × hodina, soustředění podle denní doby a automatické postřehy.
 - **Kalendář (v2.1):** odučené bloky z časovače plnou barvou předmětu, plán jako obrys, živý blok běžícího časovače, automatické odškrtnutí splněného plánu, týden/měsíc, plán vs. realita.

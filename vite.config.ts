@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -33,6 +34,10 @@ function csp(): Plugin {
 export default defineConfig({
   base: '/study-tracker/',
   plugins: [react(), csp()],
+  // Testy běží v časovém pásmu uživatele, aby hlídaly i dny se změnou času (23/25 h).
+  test: {
+    env: { TZ: 'Europe/Prague' },
+  },
   build: {
     chunkSizeWarningLimit: 800,
     rollupOptions: {

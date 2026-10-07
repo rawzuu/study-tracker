@@ -71,11 +71,11 @@ export function Dashboard() {
   const focus7 = avgFocus(inRange(sessions, addDays(today, -6), now + 1));
   const goal = data.settings.dailyGoalMin * 60;
 
-  const dueTopics = data.topics.filter((t) => isDue(t, today + DAY)).sort((a, b) => (a.nextReviewAt ?? 0) - (b.nextReviewAt ?? 0));
+  const dueTopics = data.topics.filter((t) => isDue(t, addDays(today, 1))).sort((a, b) => (a.nextReviewAt ?? 0) - (b.nextReviewAt ?? 0));
 
   const charts = useMemo(() => {
     const c = chartColors();
-    const ws = inRange(sessions, week, week + 7 * DAY);
+    const ws = inRange(sessions, week, addDays(week, 7));
     const per = new Map<string, number[]>();
     for (const s of ws) {
       if (!per.has(s.subjectId)) per.set(s.subjectId, new Array(7).fill(0));

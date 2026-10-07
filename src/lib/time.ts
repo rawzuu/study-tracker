@@ -30,6 +30,19 @@ export function addDays(t: number, n: number): number {
   return d.getTime();
 }
 
+/** Minuty od půlnoci podle místního času – správně i ve dnech změny času (den má 23 nebo 25 h). */
+export function minutesOfDay(t: number): number {
+  const d = new Date(t);
+  return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+}
+
+/** Okamžik `min` minut po půlnoci daného dne podle místního času (správně i ve dnech změny času). */
+export function atMinutes(day: number, min: number): number {
+  const d = new Date(day);
+  d.setHours(0, min, 0, 0);
+  return d.getTime();
+}
+
 /** Týden začíná pondělím. */
 export function startOfWeek(t: number | Date): number {
   const d = new Date(startOfDay(t));

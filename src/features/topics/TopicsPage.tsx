@@ -3,7 +3,7 @@ import { Archive, Check, Play, Plus, Repeat, RotateCcw, Trash2 } from 'lucide-re
 import { useStore } from '../../data/store';
 import { Topic, alive } from '../../data/schema';
 import { Empty, Modal, useToast } from '../../components/ui';
-import { DAY, fmtDate, plural, startOfDay } from '../../lib/time';
+import { DAY, addDays, fmtDate, plural, startOfDay } from '../../lib/time';
 import { navigate } from '../../lib/router';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
 import { useTimer } from '../timer/TimerContext';
@@ -143,6 +143,7 @@ function TopicModal({ topic, onClose }: { topic?: Topic; onClose: () => void }) 
               <button
                 className="btn danger left"
                 onClick={() => {
+                  if (!confirm(`Smazat téma „${topic.name}“ i s historií opakování?`)) return;
                   remove('topics', topic.id);
                   onClose();
                 }}
@@ -200,7 +201,7 @@ export function TopicsPage() {
   const [showMastered, setShowMastered] = useState(false);
 
   const topics = useMemo(() => alive(data.topics).filter((t) => !subjectId || t.subjectId === subjectId), [data.topics, subjectId]);
-  const endToday = startOfDay(Date.now()) + DAY;
+  const endToday = addDays(startOfDay(Date.now()), 1);
   const ctx = ctxFrom(data);
   const due = topics
     .filter((t) => isDue(t, endToday))
@@ -241,8 +242,9 @@ export function TopicsPage() {
 
   // Přehled zátěže na 14 dní dopředu
   const load = Array.from({ length: 14 }, (_, i) => {
-    const from = startOfDay(Date.now()) + i * DAY;
-    const n = alive(data.topics).filter((t) => !t.mastered && t.nextReviewAt != null && (i === 0 ? t.nextReviewAt < from + DAY : t.nextReviewAt >= from && t.nextReviewAt < from + DAY)).length;
+    const from = addDays(startOfDay(Date.now()), i);
+    const to = addDays(from, 1);
+    const n = alive(data.topics).filter((t) => !t.mastered && t.nextReviewAt != null && (i === 0 ? t.nextReviewAt < to : t.nextReviewAt >= from && t.nextReviewAt < to)).length;
     return { from, n };
   });
   const maxLoad = Math.max(1, ...load.map((l) => l.n));

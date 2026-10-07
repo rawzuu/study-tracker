@@ -176,15 +176,6 @@
 .mode-check {
   color: var(--accent);
 }
-.mode-info {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .zen .timer-card {
   min-height: calc(100vh - 60px);
   background: transparent;

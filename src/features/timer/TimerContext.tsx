@@ -108,12 +108,28 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
+  // Víc otevřených záložek ukazuje stejný časovač (pauza v jedné = pauza ve všech).
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      try {
+        setState(JSON.parse(e.newValue) as TimerState);
+        setNow(Date.now());
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   /** Uloží sezení. Vrací id nebo null, když bylo moc krátké. */
   const saveSession = useCallback(
     (s: TimerState, endAt: number, elapsed: number): string | null => {
       const { settings: st, data: d } = ref.current;
       if (!s.subjectId || elapsed / 1000 < st.minSessionSec) return null;
-      const id = uid();
+      // Id odvozené od začátku bloku: když blok dokončí víc záložek najednou, uloží se jen jednou.
+      const id = s.workStartedAt ? `timer-${s.workStartedAt}` : uid();
       // Téma: najdi existující nebo založ nové a posuň jeho plán opakování.
       let topicId: string | undefined;
       const topicName = s.topic.trim();
@@ -194,7 +210,9 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       if (st.sound) chime(st.volume, 'break-end');
       notify('Pauza skončila', 'Jdeme na další blok.');
     }
-    const auto = st.autoStartWork;
+    // Když pauza skončila dávno (zavřená stránka, uspaný počítač), další blok se sám nespustí –
+    // jinak by se za dobu nepřítomnosti uložila vymyšlená sezení.
+    const auto = st.autoStartWork && (!natural || Date.now() - endAt < 60_000);
     setState((p) => ({
       ...p,
       phase: 'work',

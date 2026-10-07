@@ -17,7 +17,7 @@ import { useStore } from './data/store';
 import { alive } from './data/schema';
 import { useRoute } from './lib/router';
 import { useApplyTheme } from './lib/theme';
-import { fmtClock, fmtTime, startOfDay } from './lib/time';
+import { addDays, fmtClock, fmtTime, startOfDay } from './lib/time';
 import { setNoiseVolume, startNoise, stopNoise } from './lib/noise';
 import { ThemeContext } from './components/Chart';
 import { useTimer } from './features/timer/TimerContext';
@@ -72,7 +72,7 @@ const GROUPS = ['Učení', 'Přehledy', 'Nastavení'] as const;
 function useDueCount(): number {
   const { data } = useStore();
   return useMemo(() => {
-    const end = startOfDay(Date.now()) + 86_400_000;
+    const end = addDays(startOfDay(Date.now()), 1);
     return data.topics.filter((t) => isDue(t, end)).length;
   }, [data.topics]);
 }

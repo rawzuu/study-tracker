@@ -29,7 +29,7 @@ export function StatsPage() {
   const subjById = useMemo(() => new Map(data.subjects.map((s) => [s.id, s])), [data.subjects]);
 
   const now = Date.now();
-  const end = startOfDay(now) + 86_400_000;
+  const end = addDays(startOfDay(now), 1);
   const firstSession = all.reduce((m, s) => Math.min(m, s.start), now);
   const from = period === 'all' ? startOfDay(firstSession) : addDays(end, -Number(period));
   const filtered = useMemo(

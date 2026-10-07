@@ -4,7 +4,7 @@ import { useStore } from '../../data/store';
 import { alive, uid } from '../../data/schema';
 import { Modal, useToast } from '../../components/ui';
 import { DayPlanItem, busyIntervals, dayBounds, dayRange, place, proposeDay } from '../../lib/dayplan';
-import { HOUR, MIN, fmtDuration, startOfDay, toTimeInput } from '../../lib/time';
+import { HOUR, MIN, atMinutes, fmtDuration, startOfDay, toTimeInput } from '../../lib/time';
 import './dayplan.css';
 
 /** Ranní plánování: návrh bloků na zbytek dne, úpravy a uložení do kalendáře. */
@@ -124,7 +124,7 @@ export function DayPlanModal({ onClose }: { onClose: () => void }) {
                     value={i.start ? toTimeInput(i.start) : ''}
                     onChange={(e) => {
                       const [h, m] = e.target.value.split(':').map(Number);
-                      if (!Number.isNaN(h)) update(i.key, { start: day + h * HOUR + (m || 0) * MIN, include: true });
+                      if (!Number.isNaN(h)) update(i.key, { start: atMinutes(day, h * 60 + (m || 0)), include: true });
                     }}
                   />
                   <span className="dp-color" style={{ background: s?.color }} />

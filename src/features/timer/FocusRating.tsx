@@ -55,7 +55,8 @@ export function AfterBlockModal() {
   return (
     <Modal
       title="Blok dokončen"
-      onClose={close}
+      // Esc nebo klik vedle okna nesmí zahodit rozepsaný text – uloží se. Zahodit jde jen tlačítkem Přeskočit.
+      onClose={dirty ? save : close}
       footer={
         <>
           <button className="btn ghost" onClick={close}>
@@ -90,9 +91,6 @@ export function AfterBlockModal() {
               onChange={(e) => setRecall(e.target.value)}
               style={{ minHeight: 92 }}
             />
-            <span className="small faint">
-              Vybavování z hlavy (retrieval practice) je jedna z nejúčinnějších metod učení – Roediger &amp; Karpicke 2006.
-            </span>
           </div>
         )}
 
