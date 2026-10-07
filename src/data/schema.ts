@@ -149,6 +149,9 @@ export interface Settings {
   desiredRetention: number; // cílová pravděpodobnost vybavení (FSRS)
   maxIntervalDays: number;
   anki: AnkiSettings;
+  // v2.2+
+  planDayStart: string; // HH:MM – od kdy plánovat den
+  planDayEnd: string; // HH:MM
 }
 
 export interface AppData {
@@ -203,6 +206,8 @@ export function defaultSettings(): Settings {
     desiredRetention: 0.9,
     maxIntervalDays: 365,
     anki: { enabled: false, countTime: true, deckSubjects: {}, importDays: 60 },
+    planDayStart: '08:00',
+    planDayEnd: '22:00',
   };
 }
 

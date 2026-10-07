@@ -1,10 +1,11 @@
+// Globální styly jako první – styly komponent je pak mohou přepsat.
+import './styles/global.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StoreProvider } from './data/store';
 import { TimerProvider } from './features/timer/TimerContext';
 import { ToastProvider } from './components/ui';
 import { App } from './App';
-import './styles/global.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

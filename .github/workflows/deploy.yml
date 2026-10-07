@@ -33,6 +33,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm test # když test selže, nová verze se nenasadí
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

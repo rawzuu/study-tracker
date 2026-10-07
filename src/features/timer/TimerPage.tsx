@@ -10,6 +10,7 @@ import { Segmented } from '../../components/ui';
 import { SubjectSelect } from '../subjects/SubjectSelect';
 import { BREAK_TIPS, Evidence, allModes } from './modes';
 import { useTimer } from './TimerContext';
+import { NextUpInline } from '../recommend/NextUp';
 import './timer.css';
 
 const EVIDENCE_CHIP: Record<Evidence, string> = {
@@ -290,6 +291,7 @@ export function TimerPage() {
 
         {!zen && (
           <div className="stack loose c-5 xl-4">
+            <NextUpInline />
             <div className="card">
               <div className="card-head">
                 <h2>Co se učíš</h2>

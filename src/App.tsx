@@ -11,6 +11,7 @@ import {
   Repeat,
   Settings,
   Timer,
+  Trophy,
 } from 'lucide-react';
 import { useStore } from './data/store';
 import { alive } from './data/schema';
@@ -35,6 +36,8 @@ import { SubjectsPage } from './features/subjects/SubjectsPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { useAnkiSync } from './features/anki/useAnkiSync';
+import { AchievementsPage } from './features/achievements/AchievementsPage';
+import { AchievementWatcher } from './features/achievements/AchievementWatcher';
 
 /**
  * Registr stránek. Novou funkci přidáš tak, že vytvoříš složku ve `features/`
@@ -58,6 +61,7 @@ const PAGES: PageDef[] = [
   { id: 'report', label: 'Měsíční report', icon: FileText, component: ReportPage, group: 'Přehledy' },
   { id: 'reflexe', label: 'Reflexe', icon: NotebookPen, component: ReflectionPage, group: 'Přehledy' },
   { id: 'historie', label: 'Historie', icon: History, component: HistoryPage, group: 'Přehledy' },
+  { id: 'uspechy', label: 'Úspěchy', icon: Trophy, component: AchievementsPage, group: 'Přehledy' },
   { id: 'predmety', label: 'Předměty', icon: BookMarked, component: SubjectsPage, group: 'Nastavení' },
   { id: 'nastaveni', label: 'Nastavení', icon: Settings, component: SettingsPage, group: 'Nastavení' },
   { id: 'vice', label: 'Více', icon: Menu, component: MorePage, group: null },
@@ -223,6 +227,7 @@ export function App() {
       </div>
       <AfterBlockModal />
       <NoisePlayer />
+      <AchievementWatcher />
       {showOnboarding && <Onboarding />}
     </ThemeContext.Provider>
   );

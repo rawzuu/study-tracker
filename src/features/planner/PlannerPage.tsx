@@ -1,5 +1,6 @@
 import { PointerEvent as RPointerEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarPlus, Check, ChevronLeft, ChevronRight, Download, GraduationCap, PenLine, Plus } from 'lucide-react';
+import { CalendarPlus, CalendarRange, Check, ChevronLeft, ChevronRight, Download, GraduationCap, PenLine, Plus } from 'lucide-react';
+import { DayPlanModal } from '../dayplan/DayPlanModal';
 import { useStore } from '../../data/store';
 import { Exam, PlanBlock, Session, alive } from '../../data/schema';
 import { Bar, Empty, Modal, Segmented } from '../../components/ui';
@@ -83,6 +84,7 @@ export function PlannerPage() {
   const [layer, setLayer] = useState<Layer>('all');
   const [monthStart, setMonthStart] = useState(() => startOfMonth(Date.now()));
   const [modal, setModal] = useState<ModalState>(null);
+  const [dayPlan, setDayPlan] = useState(false);
   const [drag, setDrag] = useState<{ id: string; dayDelta: number; minDelta: number } | null>(null);
   const [now, setNow] = useState(Date.now());
   const gridRef = useRef<HTMLDivElement>(null);
@@ -196,6 +198,9 @@ export function PlannerPage() {
           <p>Plná barva = odučeno (z časovače se zapisuje samo), obrys = plán. Klikni do prázdna pro nový záznam, plán přesouvej tažením.</p>
         </div>
         <div className="row wrap">
+          <button className="btn" onClick={() => setDayPlan(true)}>
+            <CalendarRange size={14} /> Naplánovat den
+          </button>
           <button className="btn" onClick={() => setModal({ kind: 'export' })}>
             <Download size={14} /> Do kalendáře
           </button>
@@ -496,6 +501,7 @@ export function PlannerPage() {
       {modal?.kind === 'session' && <SessionModal session={modal.session} initialStart={modal.start} onClose={() => setModal(null)} />}
       {modal?.kind === 'exam' && <ExamModal exam={modal.exam} onClose={() => setModal(null)} />}
       {modal?.kind === 'export' && <ExportModal onClose={() => setModal(null)} />}
+      {dayPlan && <DayPlanModal onClose={() => setDayPlan(false)} />}
     </div>
   );
 }

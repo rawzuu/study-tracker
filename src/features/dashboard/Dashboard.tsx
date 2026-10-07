@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, BookOpen, CalendarDays, Check, FileText, GraduationCap, NotebookPen, Play, Target, X } from 'lucide-react';
+import { ArrowRight, BookOpen, CalendarDays, CalendarRange, Check, FileText, GraduationCap, NotebookPen, Play, Sunrise, Target, X } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { alive } from '../../data/schema';
 import { Bar, Empty } from '../../components/ui';
@@ -16,6 +16,8 @@ import { StageMeter } from '../topics/TopicsPage';
 import { lastWeekKey, reflectionDue } from '../reflection/ReflectionPage';
 import { modeName } from '../timer/modes';
 import { AnkiPanel } from '../anki/AnkiPanel';
+import { NextUp } from '../recommend/NextUp';
+import { DayPlanModal } from '../dayplan/DayPlanModal';
 import './dashboard.css';
 
 function greeting() {
@@ -111,6 +113,9 @@ export function Dashboard() {
   const showReport = new Date(now).getDate() <= 7 && prevMonthCount > 0 && !reportDismissed;
   const thisWeekReflection = data.reflections.find((r) => !r.deletedAt && r.weekStart === lastWeekKey() && r.focusNext);
 
+  const [planOpen, setPlanOpen] = useState(false);
+  const [morningDismissed, dismissMorning] = useDismiss(`st.dismiss.morning.${dayKey(now)}`);
+  const showMorning = !morningDismissed && new Date(now).getHours() >= 5 && new Date(now).getHours() < 13 && todayBlocks.length === 0 && alive(data.subjects).length > 0;
   const showAnki = data.settings.anki.enabled || data.anki.some((a) => a.id === 'snapshot' && !a.deletedAt);
 
   const startTopic = (subjectId: string, topic: string, planBlockId?: string) => {
@@ -132,8 +137,20 @@ export function Dashboard() {
         )}
       </div>
 
-      {(showReflection || showReport || thisWeekReflection) && (
+      {(showReflection || showReport || thisWeekReflection || showMorning) && (
         <div className="stack tight">
+          {showMorning && (
+            <div className="banner">
+              <Sunrise size={16} />
+              <span className="grow">Dobré ráno – naplánuj si dnešek. Navrhnu bloky podle zkoušek, opakování a cílů, ty jen potvrdíš.</span>
+              <button className="btn sm primary" onClick={() => setPlanOpen(true)}>
+                Naplánovat den
+              </button>
+              <button className="btn ghost icon sm" onClick={dismissMorning} aria-label="Skrýt">
+                <X size={14} />
+              </button>
+            </div>
+          )}
           {showReport && (
             <div className="banner">
               <FileText size={16} />
@@ -225,6 +242,8 @@ export function Dashboard() {
         </div>
       </div>
 
+      <NextUp />
+
       <div className="g12">
         <div className="card c-4 xl-3 dash-timer">
           <div className="card-head">
@@ -246,7 +265,9 @@ export function Dashboard() {
         <div className="card c-4 xl-3">
           <div className="card-head">
             <h2>Dnešní plán</h2>
-            <a href="#/planovac">Kalendář</a>
+            <button className="btn ghost sm" onClick={() => setPlanOpen(true)}>
+              <CalendarRange size={13} /> Naplánovat
+            </button>
           </div>
           {todayBlocks.length === 0 ? (
             <Empty icon={<CalendarDays size={22} strokeWidth={1.5} />} title="Na dnešek nic">
@@ -445,6 +466,7 @@ export function Dashboard() {
           )}
         </div>
       </div>
+      {planOpen && <DayPlanModal onClose={() => setPlanOpen(false)} />}
     </div>
   );
 }

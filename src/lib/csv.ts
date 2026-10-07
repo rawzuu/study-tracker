@@ -3,7 +3,9 @@ import { modeName } from '../features/timer/modes';
 import { dayKey, fmtTime } from './time';
 
 function cell(v: string | number | undefined): string {
-  const s = v == null ? '' : String(v);
+  let s = v == null ? '' : String(v);
+  // Ochrana proti „formula injection“: text začínající =, +, -, @ by Excel spustil jako vzorec.
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

@@ -9,6 +9,9 @@ import { addDays, dayKey, fmtDuration, startOfDay, WEEKDAYS_SHORT } from '../../
 
 const fmtMin = (min: number) => fmtDuration(min * 60);
 
+/** Tooltipy ECharts se vykreslují jako HTML – texty od uživatele (názvy předmětů) musí být escapované. */
+export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
 /** Popisek osy v minutách: "45m", "1,5h" */
 const fmtAxisMin = (v: number) =>
   v === 0 ? '0' : v < 60 ? `${v}m` : `${(v / 60).toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}h`;
@@ -203,7 +206,7 @@ export function donut(c: ChartColors, items: { name: string; color: string; min:
     tooltip: {
       ...tooltipBase(c),
       trigger: 'item',
-      formatter: (p: { name: string; value: number; percent: number }) => `<b>${p.name}</b><br/>${fmtMin(p.value)} · ${p.percent} %`,
+      formatter: (p: { name: string; value: number; percent: number }) => `<b>${escapeHtml(p.name)}</b><br/>${fmtMin(p.value)} · ${p.percent} %`,
     },
     series: [
       {

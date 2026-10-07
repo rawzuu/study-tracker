@@ -19,6 +19,9 @@ Osobní aplikace na sledování času učení: časovače podložené výzkumem,
 - **Měsíční report (v2):** postřehy, nejsilnější dny a hodiny, chronotyp, srovnání předmětů s minulým měsícem, tisk do PDF.
 - **Šum na soustředění (v2):** hnědý, růžový nebo bílý šum generovaný v prohlížeči.
 - **Odebíraný kalendář (v2):** plán se publikuje do tajného gistu a Apple Kalendář se aktualizuje sám.
+- **„Co teď?“ (v2.2):** doporučí, co se učit, podle 6 signálů – blízkost zkoušky, témata k opakování (FSRS), zaostávání za týdenním cílem, zanedbání, plán a prokládání předmětů. Typ činnosti a délka bloku podle tvých dat o soustředění. Rozpis „Proč“ ukazuje všechny signály. Viz [`src/lib/recommend.ts`](src/lib/recommend.ts).
+- **Ranní plánování (v2.2):** jedním klikem navrhne prokládaný plán na zbytek dne (nedokončené ze včerejška, priority, volná místa v kalendáři) a uloží ho do kalendáře.
+- **Úspěchy (v2.2):** 119 odznaků ve 24 kategoriích s úrovněmi (ocel → platina) + skryté. Počítají se z dat, i zpětně. Připraveno na budoucí online statistiku „kolik % uživatelů to má“ (vypnuto, viz `src/features/achievements/share.ts`).
 - **Export CSV (v2).**
 - **Průvodce pro nové uživatele (v2)** – kamarádi si nastaví vlastní zálohu na svůj GitHub.
 - **Tmavý (výchozí) i světlý režim.** Funguje na mobilu a jde přidat na plochu (PWA, offline).
@@ -59,13 +62,23 @@ Data zůstávají v soukromém repu nedotčená (zálohy stavu: tagy `zaloha-pre
    - *Permissions* → *Contents* → **Read and write**
 2. V aplikaci otevři **Nastavení → Synchronizace s GitHubem** a vlož token.
 
+## Bezpečnost
+
+- **Content Security Policy:** stránka smí spouštět jen vlastní skripty a komunikovat jen s `api.github.com` a s Anki na `127.0.0.1:8765`. I kdyby se do stránky dostal cizí kód, token nemá kam odeslat.
+- Token k GitHubu je jen v prohlížeči daného zařízení a má přístup jen k datovému repu (fine-grained, Contents: Read and write).
+- Texty od uživatele se v grafech escapují (žádné vkládání HTML), CSV export je chráněný proti spouštění vzorců v Excelu.
+- Odebíraný kalendář je v tajném (neveřejném) gistu.
+
 ## Vývoj
 
 ```bash
 npm install
 npm run dev       # http://localhost:5173/study-tracker/
+npm test          # testy klíčové logiky (slučování dat, FSRS, doporučení, plánování, úspěchy, export)
 npm run build
 ```
+
+GitHub Actions před každým nasazením spustí testy – když něco selže, nová verze se nenasadí.
 
 Po pushnutí do `main` se aplikace automaticky nasadí přes GitHub Actions.
 

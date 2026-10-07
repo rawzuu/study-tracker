@@ -1,0 +1,89 @@
+.dp-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  color: var(--text-3);
+}
+.dp-sum b {
+  color: var(--text);
+  font-weight: 500;
+}
+.dp-sum .accent-text b {
+  color: var(--accent);
+}
+.dp-axis {
+  position: relative;
+  height: 34px;
+  border-radius: 5px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  margin-bottom: 14px;
+}
+.dp-axis i {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  border-radius: 3px;
+}
+.dp-busy {
+  background: repeating-linear-gradient(-45deg, var(--line-strong), var(--line-strong) 3px, transparent 3px, transparent 6px);
+}
+.dp-item {
+  opacity: 0.95;
+}
+.dp-now {
+  top: -3px !important;
+  bottom: -3px !important;
+  width: 1.5px;
+  background: var(--danger);
+}
+.dp-tick {
+  position: absolute;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--text-3);
+}
+.dp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.dp-row:last-child {
+  border-bottom: 0;
+}
+.dp-row.off {
+  opacity: 0.45;
+}
+.dp-check input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+.dp-row .dp-time {
+  width: 92px;
+  height: 30px;
+  padding: 0 8px;
+}
+.dp-row select.dp-dur {
+  width: 96px;
+  height: 30px;
+}
+.dp-color {
+  width: 4px;
+  height: 28px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .dp-row {
+    flex-wrap: wrap;
+  }
+  .dp-row .grow {
+    flex-basis: calc(100% - 40px);
+    order: 5;
+  }
+}
