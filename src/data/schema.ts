@@ -1,0 +1,146 @@
+/**
+ * Datové schéma aplikace.
+ *
+ * PRAVIDLA PRO ZMĚNY (aby se nikdy neztratila data):
+ *  1. Když měníš tvar dat, zvyš SCHEMA_VERSION o 1.
+ *  2. Do `migrations.ts` přidej funkci, která převede data z předchozí verze na novou.
+ *  3. Nikdy nemaž ani nepřejmenovávej pole bez migrace.
+ *  4. Každá entita má `id`, `createdAt`, `updatedAt` a volitelně `deletedAt`.
+ *     Mazání je "měkké" (nastaví se deletedAt), díky tomu funguje synchronizace mezi zařízeními.
+ */
+
+export const SCHEMA_VERSION = 1;
+
+export interface Entity {
+  id: string;
+  createdAt: number; // epoch ms
+  updatedAt: number; // epoch ms – podle něj se řeší konflikty při synchronizaci
+  deletedAt?: number;
+}
+
+export interface Subject extends Entity {
+  name: string;
+  color: string;
+  weeklyGoalMin: number; // 0 = bez cíle
+  archived: boolean;
+}
+
+export interface Session extends Entity {
+  subjectId: string;
+  topic: string;
+  start: number; // epoch ms
+  end: number; // epoch ms
+  durationSec: number; // čistý čas učení (bez pauz)
+  mode: string; // id režimu časovače nebo 'manual'
+  focus?: number; // 1–5
+  interruptions: number;
+  note: string;
+}
+
+export interface PlanBlock extends Entity {
+  subjectId: string;
+  title: string;
+  start: number; // epoch ms
+  durationMin: number;
+  done: boolean;
+  examId?: string; // vygenerováno z plánovače zkoušky
+  note: string;
+}
+
+export interface Exam extends Entity {
+  subjectId: string;
+  name: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM nebo ''
+  note: string;
+}
+
+export interface TimerPreset extends Entity {
+  name: string;
+  workMin: number;
+  shortBreakMin: number;
+  longBreakMin: number;
+  roundsBeforeLong: number;
+}
+
+export type ThemePref = 'dark' | 'light' | 'system';
+
+export interface Settings {
+  updatedAt: number;
+  theme: ThemePref;
+  dailyGoalMin: number;
+  defaultMode: string;
+  autoStartBreaks: boolean;
+  autoStartWork: boolean;
+  sound: boolean;
+  volume: number; // 0–1
+  notifications: boolean;
+  askFocusRating: boolean;
+  flowtimeRatio: number; // pauza = práce / ratio
+  minSessionSec: number; // kratší sezení se neukládají
+}
+
+export interface AppData {
+  schemaVersion: number;
+  subjects: Subject[];
+  sessions: Session[];
+  planBlocks: PlanBlock[];
+  exams: Exam[];
+  presets: TimerPreset[];
+  settings: Settings;
+}
+
+/** Kolekce entit, které se slučují po jednotlivých záznamech. */
+export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets'] as const;
+export type CollectionKey = (typeof COLLECTIONS)[number];
+
+export const SUBJECT_COLORS = [
+  '#7c8cff', // indigo
+  '#5eead4', // teal
+  '#f472b6', // pink
+  '#fbbf24', // amber
+  '#60a5fa', // blue
+  '#a78bfa', // violet
+  '#4ade80', // green
+  '#fb923c', // orange
+  '#f87171', // red
+  '#22d3ee', // cyan
+];
+
+export function defaultSettings(): Settings {
+  return {
+    updatedAt: 0,
+    theme: 'dark',
+    dailyGoalMin: 120,
+    defaultMode: 'pomodoro',
+    autoStartBreaks: true,
+    autoStartWork: false,
+    sound: true,
+    volume: 0.6,
+    notifications: false,
+    askFocusRating: true,
+    flowtimeRatio: 5,
+    minSessionSec: 60,
+  };
+}
+
+export function emptyData(): AppData {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    subjects: [],
+    sessions: [],
+    planBlocks: [],
+    exams: [],
+    presets: [],
+    settings: defaultSettings(),
+  };
+}
+
+export function uid(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+export function alive<T extends Entity>(list: T[]): T[] {
+  return list.filter((e) => !e.deletedAt);
+}
