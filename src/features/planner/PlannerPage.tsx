@@ -2,8 +2,9 @@ import { PointerEvent as RPointerEvent, useEffect, useMemo, useRef, useState } f
 import { CalendarPlus, ChevronLeft, ChevronRight, Download, GraduationCap, Plus } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { Exam, PlanBlock, alive } from '../../data/schema';
-import { Bar, Empty } from '../../components/ui';
-import { addDays, dayKey, fmtDate, fmtDuration, fmtTime, parseDayKey, plural, startOfDay, startOfWeek, WEEKDAYS_SHORT } from '../../lib/time';
+import { Bar, Empty, Segmented } from '../../components/ui';
+import { MonthView } from './MonthView';
+import { addDays, dayKey, fmtDate, fmtDuration, fmtTime, parseDayKey, plural, startOfDay, startOfMonth, startOfWeek, WEEKDAYS_SHORT } from '../../lib/time';
 import { bySubject, inRange } from '../../lib/stats';
 import { SubjectTag } from '../subjects/SubjectSelect';
 import { BlockModal, ExamModal, ExportModal } from './PlannerModals';
@@ -19,6 +20,11 @@ type ModalState =
   | { kind: 'exam'; exam?: Exam }
   | { kind: 'export' }
   | null;
+
+function shiftMonth(t: number, n: number): number {
+  const d = new Date(t);
+  return new Date(d.getFullYear(), d.getMonth() + n, 1).getTime();
+}
 
 /** Rozložení překrývajících se bloků do sloupců. */
 function layoutDay(blocks: PlanBlock[]): Map<string, { lane: number; lanes: number }> {
@@ -54,6 +60,8 @@ function layoutDay(blocks: PlanBlock[]): Map<string, { lane: number; lanes: numb
 export function PlannerPage() {
   const { data, upsert } = useStore();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(Date.now()));
+  const [view, setView] = useState<'week' | 'month'>('week');
+  const [monthStart, setMonthStart] = useState(() => startOfMonth(Date.now()));
   const [modal, setModal] = useState<ModalState>(null);
   const [drag, setDrag] = useState<{ id: string; dx: number; dy: number; dayDelta: number; minDelta: number } | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -156,7 +164,7 @@ export function PlannerPage() {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   return (
-    <div className="stack" style={{ gap: 16 }}>
+    <div className="stack loose">
       <div className="page-head">
         <div>
           <h1>Plánovač</h1>
@@ -176,28 +184,66 @@ export function PlannerPage() {
       </div>
 
       <div className="card planner-card">
-        <div className="row between" style={{ marginBottom: 12 }}>
+        <div className="card-head">
           <div className="row">
-            <button className="btn icon sm" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Předchozí týden">
-              <ChevronLeft size={17} />
+            <button
+              className="btn icon sm"
+              onClick={() => (view === 'week' ? setWeekStart(addDays(weekStart, -7)) : setMonthStart(shiftMonth(monthStart, -1)))}
+              aria-label="Předchozí"
+            >
+              <ChevronLeft size={16} />
             </button>
-            <button className="btn icon sm" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Další týden">
-              <ChevronRight size={17} />
+            <button
+              className="btn icon sm"
+              onClick={() => (view === 'week' ? setWeekStart(addDays(weekStart, 7)) : setMonthStart(shiftMonth(monthStart, 1)))}
+              aria-label="Další"
+            >
+              <ChevronRight size={16} />
             </button>
-            <h2 style={{ marginLeft: 6 }}>
-              {fmtDate(weekStart, { day: 'numeric', month: 'long' })} – {fmtDate(addDays(weekStart, 6), { day: 'numeric', month: 'long' })}
+            <h2 style={{ marginLeft: 4 }}>
+              {view === 'week'
+                ? `${fmtDate(weekStart, { day: 'numeric', month: 'long' })} – ${fmtDate(addDays(weekStart, 6), { day: 'numeric', month: 'long' })}`
+                : new Date(monthStart).toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })}
             </h2>
-            {!isThisWeek && (
-              <button className="btn ghost sm" onClick={() => setWeekStart(startOfWeek(Date.now()))}>
+            {(view === 'week' ? !isThisWeek : monthStart !== startOfMonth(now)) && (
+              <button
+                className="btn ghost sm"
+                onClick={() => {
+                  setWeekStart(startOfWeek(Date.now()));
+                  setMonthStart(startOfMonth(Date.now()));
+                }}
+              >
                 Dnes
               </button>
             )}
           </div>
-          <span className="small muted num">
-            Naplánováno {fmtDuration(totalPlanned, { short: true })} · hotovo {fmtDuration(totalDone, { short: true })}
-          </span>
+          <div className="row">
+            {view === 'week' && (
+              <span className="sub num hide-sm">
+                plán {fmtDuration(totalPlanned, { short: true })} · hotovo {fmtDuration(totalDone, { short: true })}
+              </span>
+            )}
+            <Segmented
+              value={view}
+              onChange={setView}
+              options={[
+                { value: 'week', label: 'Týden' },
+                { value: 'month', label: 'Měsíc' },
+              ]}
+            />
+          </div>
         </div>
 
+        {view === 'month' ? (
+          <MonthView
+            data={data}
+            monthStart={monthStart}
+            onOpenDay={(d) => {
+              setWeekStart(startOfWeek(d));
+              setView('week');
+            }}
+          />
+        ) : (
         <div className="week-scroll-x" ref={scrollXRef}>
           <div className="week" ref={gridRef}>
             <div className="week-head">
@@ -213,7 +259,7 @@ export function PlannerPage() {
                       const s = data.subjects.find((x) => x.id === e.subjectId);
                       return (
                         <button key={e.id} className="exam-pill" style={{ borderColor: s?.color }} onClick={() => setModal({ kind: 'exam', exam: e })} title={e.name}>
-                          🎓 {e.name}
+                          {e.name}
                         </button>
                       );
                     })}
@@ -281,10 +327,11 @@ export function PlannerPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
-      <div className="grid cols-2">
-        <div className="card">
+      <div className="g12">
+        <div className="card c-6">
           <div className="card-head">
             <h2>Plán vs. realita</h2>
             <span className="sub">{isThisWeek ? 'tento týden' : 'vybraný týden'}</span>
@@ -317,7 +364,7 @@ export function PlannerPage() {
           )}
         </div>
 
-        <div className="card">
+        <div className="card c-6">
           <div className="card-head">
             <h2>Zkoušky</h2>
             <button className="btn ghost sm" onClick={() => setModal({ kind: 'exam' })}>

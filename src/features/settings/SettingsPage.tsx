@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, CloudUpload, Download, Github, Info, Moon, Monitor, Plus, RefreshCw, Sun, Trash2, Upload, Volume2 } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle2, CloudUpload, Copy, Download, FileSpreadsheet, Github, Info, Moon, Monitor, Plus, RefreshCw, Sun, Trash2, Upload, Volume2 } from 'lucide-react';
+import { sessionsToCsv } from '../../lib/csv';
+import { FEED_FILE, buildFeed, feedHttpsUrl, feedWebcalUrl, publishFeed, readFeedStatus } from '../planner/calendarFeed';
+import { createGist } from '../../data/github';
 import { useStore } from '../../data/store';
 import { SCHEMA_VERSION, ThemePref, alive, uid } from '../../data/schema';
 import { GithubConfig, fetchRemote, loadGithubConfig, saveGithubConfig } from '../../data/github';
@@ -29,13 +32,14 @@ export function SettingsPage() {
   const toast = useToast();
 
   return (
-    <div className="stack" style={{ gap: 16, maxWidth: 820 }}>
+    <div>
       <div className="page-head">
         <div>
           <h1>Nastavení</h1>
           <p>Vzhled, časovač, synchronizace a zálohy.</p>
         </div>
       </div>
+      <div className="masonry">
 
       <SyncSection />
 
@@ -88,6 +92,12 @@ export function SettingsPage() {
         </Row>
         <Row label="Hodnotit soustředění" desc="Po každém bloku se zeptá na hodnocení 1–5. Díky tomu uvidíš, kdy se učíš nejlépe.">
           <Switch checked={s.askFocusRating} onChange={(v) => setSettings({ askFocusRating: v })} />
+        </Row>
+        <Row label="Vybavení po bloku" desc="Po bloku vyzve k sepsání hlavních bodů z hlavy (retrieval practice). Jde vždy přeskočit.">
+          <Switch checked={s.askRecall} onChange={(v) => setSettings({ askRecall: v })} />
+        </Row>
+        <Row label="Připomínat týdenní reflexi" desc="Na začátku týdne se na přehledu objeví výzva k reflexi minulého týdne.">
+          <Switch checked={s.weeklyReflection} onChange={(v) => setSettings({ weeklyReflection: v })} />
         </Row>
         <Row label="Zvuk">
           <div className="row">
@@ -153,6 +163,7 @@ export function SettingsPage() {
         </Row>
       </div>
 
+      <CalendarFeedSection />
       <PresetsSection />
       <BackupSection />
 
@@ -169,6 +180,7 @@ export function SettingsPage() {
           automaticky převedou na novou verzi a před převodem se uloží záloha.
         </p>
       </div>
+      </div>
     </div>
   );
 }
@@ -182,7 +194,7 @@ function SyncSection() {
   const existing = loadGithubConfig();
   const [editing, setEditing] = useState(!existing);
   const [cfg, setCfg] = useState<GithubConfig>(
-    existing ?? { owner: 'rawzuu', repo: 'study-tracker-data', branch: 'main', path: 'data.json', token: '' },
+    existing ?? { owner: '', repo: 'study-tracker-data', branch: 'main', path: 'data.json', token: '' },
   );
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -276,7 +288,14 @@ function SyncSection() {
           <div className="callout">
             <Info size={16} />
             <div className="stack tight small">
-              <b>Jak získat token (jednou na každém zařízení):</b>
+              <b>Jak zapnout zálohu (asi 3 minuty):</b>
+              <span>
+                0. Pokud ještě nemáš soukromé repo na data,{' '}
+                <a href="https://github.com/new?name=study-tracker-data&visibility=private&description=Data+pro+Study+Tracker" target="_blank" rel="noreferrer">
+                  založ ho tady
+                </a>{' '}
+                (Private, zaškrtni „Add a README“).
+              </span>
               <span>
                 1. Otevři{' '}
                 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
@@ -287,15 +306,15 @@ function SyncSection() {
                 2. <i>Repository access</i> → <i>Only select repositories</i> → vyber <code>{cfg.repo || 'study-tracker-data'}</code>
               </span>
               <span>
-                3. <i>Permissions</i> → <i>Contents</i> → <b>Read and write</b>. Nic dalšího není potřeba.
+                3. <i>Permissions</i> → <i>Contents</i> → <b>Read and write</b>. (Pro odebíraný kalendář navíc v <i>Account permissions</i> → <i>Gists</i> → <b>Read and write</b>.)
               </span>
-              <span>4. Expiraci nastav třeba na rok, token zkopíruj a vlož sem.</span>
+              <span>4. Expiraci nastav třeba na rok, token zkopíruj a vlož sem. Na každém zařízení (počítač, mobil) se token vkládá zvlášť.</span>
               <span className="faint">Token zůstává jen v tomto prohlížeči a má přístup pouze k datovému repu.</span>
             </div>
           </div>
           <div className="grid cols-2" style={{ gap: 10 }}>
             <Field label="Vlastník (uživatel)">
-              <input className="input" value={cfg.owner} onChange={(e) => setCfg({ ...cfg, owner: e.target.value.trim() })} />
+              <input className="input" placeholder="tvoje GitHub jméno" value={cfg.owner} onChange={(e) => setCfg({ ...cfg, owner: e.target.value.trim() })} />
             </Field>
             <Field label="Repo s daty">
               <input className="input" value={cfg.repo} onChange={(e) => setCfg({ ...cfg, repo: e.target.value.trim() })} />
@@ -433,11 +452,14 @@ function BackupSection() {
         <h2>Záloha</h2>
       </div>
       <p className="small muted" style={{ marginBottom: 12 }}>
-        Export stáhne všechna data jako JSON. Import zálohu <b>sloučí</b> s aktuálními daty – nic nepřepíše ani nesmaže.
+        Export JSON stáhne všechna data. CSV otevřeš v Excelu nebo Numbers. Import zálohu <b>sloučí</b> s aktuálními daty – nic nepřepíše ani nesmaže.
       </p>
       <div className="row wrap">
         <button className="btn" onClick={() => downloadFile(`study-tracker-zaloha-${dayKey(Date.now())}.json`, serialize(data), 'application/json')}>
           <Download size={15} /> Exportovat JSON
+        </button>
+        <button className="btn" onClick={() => downloadFile(`study-tracker-sezeni-${dayKey(Date.now())}.csv`, sessionsToCsv(data.sessions, data.subjects, data.presets), 'text/csv;charset=utf-8')}>
+          <FileSpreadsheet size={15} /> Sezení do CSV
         </button>
         <button className="btn" onClick={() => fileRef.current?.click()}>
           <Upload size={15} /> Importovat zálohu
@@ -453,6 +475,176 @@ function BackupSection() {
             e.target.value = '';
           }}
         />
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Odebíraný kalendář
+// ============================================================
+function CalendarFeedSection() {
+  const { data, setSettings } = useStore();
+  const toast = useToast();
+  const feed = data.settings.calendarFeed;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [includeExams, setIncludeExams] = useState(feed?.includeExams ?? true);
+  const [alarm, setAlarm] = useState<string>(feed?.alarmMin == null ? (feed ? 'none' : '10') : String(feed.alarmMin));
+  const status = readFeedStatus();
+  const hasSync = !!loadGithubConfig();
+
+  const enable = async () => {
+    const cfg = loadGithubConfig();
+    if (!cfg) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const opts = { includeExams, alarmMin: alarm === 'none' ? null : Number(alarm) };
+      const { id, owner } = await createGist(cfg.token, FEED_FILE, buildFeed(data, opts));
+      setSettings({ calendarFeed: { gistId: id, owner, ...opts } });
+      toast('Kalendář publikován');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const updateOpts = (patch: { includeExams?: boolean; alarmMin?: number | null }) => {
+    if (feed) setSettings({ calendarFeed: { ...feed, ...patch } });
+  };
+
+  const copy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Odkaz zkopírován');
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <h2 className="row" style={{ gap: 8 }}>
+          <CalendarClock size={16} /> Odebíraný kalendář
+        </h2>
+        {feed ? <span className="chip ok">zapnuto</span> : <span className="chip">vypnuto</span>}
+      </div>
+      <div className="stack">
+        <p className="small muted">
+          Plán a zkoušky se publikují do tajného gistu na tvém GitHubu. Apple Kalendář si je pak sám pravidelně stahuje, takže nic
+          neimportuješ ručně. Kdo zná odkaz, plán uvidí – nikde ale není vypsaný ani vyhledatelný.
+        </p>
+        {!hasSync ? (
+          <div className="callout">
+            <Info size={15} />
+            <span>Nejdřív zapni synchronizaci s GitHubem výše.</span>
+          </div>
+        ) : feed ? (
+          <>
+            <div className="feed-url">
+              <code className="ellipsis">{feedWebcalUrl(feed)}</code>
+              <button className="btn sm" onClick={() => void copy(feedWebcalUrl(feed))}>
+                <Copy size={13} /> Kopírovat
+              </button>
+            </div>
+            <div className="row wrap">
+              <a className="btn primary" href={feedWebcalUrl(feed)}>
+                <CalendarClock size={14} /> Přidat do Apple Kalendáře
+              </a>
+              <button
+                className="btn"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await publishFeed(data, feed, true);
+                    toast('Kalendář aktualizován');
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : String(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <RefreshCw size={14} /> Aktualizovat teď
+              </button>
+              <a className="btn ghost" href={feedHttpsUrl(feed)} target="_blank" rel="noreferrer">
+                Zobrazit soubor
+              </a>
+            </div>
+            <p className="small faint">
+              Na iPhonu: Nastavení → Kalendář → Účty → Přidat účet → Jiné → Přidat odebíraný kalendář a vlož odkaz. Na Macu stačí
+              kliknout na tlačítko výše. Změny se v kalendáři objeví do ~1 hodiny (podle intervalu obnovy v Kalendáři).
+              {status && ` Naposledy publikováno ${fmtTime(status.at)}${status.error ? ` – chyba: ${status.error}` : ''}.`}
+            </p>
+            <Row label="Zahrnout zkoušky">
+              <Switch
+                checked={feed.includeExams}
+                onChange={(v) => updateOpts({ includeExams: v })}
+              />
+            </Row>
+            <Row label="Připomenutí před blokem">
+              <select
+                className="input"
+                style={{ width: 160 }}
+                value={feed.alarmMin == null ? 'none' : String(feed.alarmMin)}
+                onChange={(e) => updateOpts({ alarmMin: e.target.value === 'none' ? null : Number(e.target.value) })}
+              >
+                <option value="none">Bez připomenutí</option>
+                <option value="5">5 minut</option>
+                <option value="10">10 minut</option>
+                <option value="15">15 minut</option>
+                <option value="30">30 minut</option>
+              </select>
+            </Row>
+            <button
+              className="btn ghost danger-text"
+              style={{ alignSelf: 'flex-start' }}
+              onClick={() => {
+                if (confirm('Vypnout odebíraný kalendář? Gist zůstane na GitHubu, jen se přestane aktualizovat.')) setSettings({ calendarFeed: null });
+              }}
+            >
+              Vypnout
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="grid cols-2" style={{ gap: 10 }}>
+              <label className="field">
+                <span>Připomenutí před blokem</span>
+                <select className="input" value={alarm} onChange={(e) => setAlarm(e.target.value)}>
+                  <option value="none">Bez připomenutí</option>
+                  <option value="5">5 minut</option>
+                  <option value="10">10 minut</option>
+                  <option value="15">15 minut</option>
+                  <option value="30">30 minut</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Zahrnout zkoušky</span>
+                <div style={{ height: 34, display: 'flex', alignItems: 'center' }}>
+                  <Switch checked={includeExams} onChange={setIncludeExams} />
+                </div>
+              </label>
+            </div>
+            <p className="small faint">
+              Token musí mít navíc oprávnění <b>Account permissions → Gists → Read and write</b>. Existující token jde upravit na
+              GitHubu v Settings → Developer settings → Fine-grained tokens.
+            </p>
+            <button className="btn primary" style={{ alignSelf: 'flex-start' }} onClick={enable} disabled={busy}>
+              <CalendarClock size={14} /> {busy ? 'Publikuji…' : 'Zapnout odebíraný kalendář'}
+            </button>
+          </>
+        )}
+        {error && (
+          <div className="callout bad">
+            <AlertTriangle size={15} />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -13,7 +13,8 @@ export function mergeEntities<T extends Entity>(a: T[], b: T[]): T[] {
 
 /** Sloučí lokální a vzdálená data (obě musí být už zmigrovaná na aktuální verzi). */
 export function mergeData(local: AppData, remote: AppData): AppData {
-  const out: AppData = { ...local };
+  // Neznámá pole z budoucích verzí zachováme z obou stran.
+  const out: AppData = { ...remote, ...local };
   for (const key of COLLECTIONS) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (out as any)[key] = mergeEntities(local[key] as Entity[], remote[key] as Entity[]);

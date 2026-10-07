@@ -5,9 +5,10 @@ import {
   CalendarComponent,
   GridComponent,
   LegendComponent,
+  MarkLineComponent,
+  TitleComponent,
   TooltipComponent,
   VisualMapComponent,
-  MarkLineComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { EChartsCoreOption } from 'echarts/core';
@@ -21,24 +22,36 @@ echarts.use([
   CalendarComponent,
   GridComponent,
   LegendComponent,
+  MarkLineComponent,
+  TitleComponent,
   TooltipComponent,
   VisualMapComponent,
-  MarkLineComponent,
   CanvasRenderer,
 ]);
 
 export const ThemeContext = createContext<ResolvedTheme>('dark');
 
+export const MONO = "'Geist Mono', ui-monospace, Menlo, monospace";
+export const SANS = "'Geist', -apple-system, sans-serif";
+
 export interface ChartColors {
   text: string;
+  text2: string;
+  text3: string;
+  line: string;
+  lineStrong: string;
+  panel: string;
+  panel2: string;
+  panel3: string;
+  accent: string;
+  break: string;
+  heat0: string;
+  // starší názvy
   muted: string;
   faint: string;
   border: string;
   surface: string;
   surface3: string;
-  accent: string;
-  break: string;
-  heat0: string;
 }
 
 /** Aktuální téma – použij jako závislost v useMemo pro options grafů. */
@@ -48,32 +61,40 @@ export function useTheme(): ResolvedTheme {
 
 /** Barvy grafů z CSS proměnných aktuálního tématu. */
 export function chartColors(): ChartColors {
-  return {
+  const c = {
     text: cssVar('--text'),
-    muted: cssVar('--text-muted'),
-    faint: cssVar('--text-faint'),
-    border: cssVar('--border'),
-    surface: cssVar('--surface'),
-    surface3: cssVar('--surface-3'),
+    text2: cssVar('--text-2'),
+    text3: cssVar('--text-3'),
+    line: cssVar('--line'),
+    lineStrong: cssVar('--line-strong'),
+    panel: cssVar('--panel'),
+    panel2: cssVar('--panel-2'),
+    panel3: cssVar('--panel-3'),
     accent: cssVar('--accent'),
     break: cssVar('--break'),
     heat0: cssVar('--heat-0'),
   };
+  return { ...c, muted: c.text2, faint: c.text3, border: c.line, surface: c.panel, surface3: c.panel3 };
 }
 
 /** Společný styl tooltipu. */
 export function tooltipBase(c: ChartColors) {
   return {
-    backgroundColor: c.surface3,
-    borderColor: c.border,
+    backgroundColor: c.panel2,
+    borderColor: c.lineStrong,
     borderWidth: 1,
-    padding: [8, 12],
-    textStyle: { color: c.text, fontFamily: 'Inter, -apple-system, sans-serif', fontSize: 12.5 },
-    extraCssText: 'border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.35);',
+    padding: [8, 11],
+    textStyle: { color: c.text, fontFamily: SANS, fontSize: 12.5 },
+    extraCssText: 'border-radius:8px;box-shadow:0 16px 40px rgba(0,0,0,.35);',
   };
 }
 
-export function Chart({ option, height = 260 }: { option: EChartsCoreOption; height?: number }) {
+/** Styl popisků os. */
+export function axisLabel(c: ChartColors, extra: Record<string, unknown> = {}) {
+  return { color: c.text3, fontSize: 10.5, fontFamily: MONO, ...extra };
+}
+
+export function Chart({ option, height = 260 }: { option: EChartsCoreOption; height?: number | string }) {
   const el = useRef<HTMLDivElement>(null);
   const inst = useRef<echarts.ECharts | null>(null);
 
@@ -82,6 +103,8 @@ export function Chart({ option, height = 260 }: { option: EChartsCoreOption; hei
     inst.current = echarts.init(el.current, undefined, { renderer: 'canvas' });
     const ro = new ResizeObserver(() => inst.current?.resize());
     ro.observe(el.current);
+    // Po načtení webfontů graf překreslíme, aby popisky použily Geist Mono.
+    document.fonts?.ready.then(() => inst.current?.resize()).catch(() => {});
     return () => {
       ro.disconnect();
       inst.current?.dispose();
@@ -92,8 +115,9 @@ export function Chart({ option, height = 260 }: { option: EChartsCoreOption; hei
   useEffect(() => {
     inst.current?.setOption(
       {
-        textStyle: { fontFamily: 'Inter, -apple-system, sans-serif' },
-        animationDuration: 500,
+        textStyle: { fontFamily: SANS },
+        animationDuration: 450,
+        animationEasing: 'cubicOut',
         ...option,
       },
       true,

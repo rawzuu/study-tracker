@@ -118,3 +118,41 @@ export async function pushRemote(c: GithubConfig, text: string, sha: string | nu
   const json = (await res.json()) as { content: { sha: string } };
   return json.content.sha;
 }
+
+// ---------- Gist pro odebíraný kalendář ----------
+
+function gistHeaders(token: string): HeadersInit {
+  return {
+    Accept: 'application/vnd.github+json',
+    Authorization: `Bearer ${token}`,
+    'X-GitHub-Api-Version': '2022-11-28',
+    'Content-Type': 'application/json',
+  };
+}
+
+function gistError(status: number): string {
+  if (status === 401) return 'Neplatný token.';
+  if (status === 403 || status === 404) return 'Token nemá oprávnění „Gists: Read and write“.';
+  return `GitHub vrátil chybu ${status}.`;
+}
+
+/** Vytvoří tajný (neveřejný) gist. */
+export async function createGist(token: string, filename: string, content: string): Promise<{ id: string; owner: string }> {
+  const res = await fetch('https://api.github.com/gists', {
+    method: 'POST',
+    headers: gistHeaders(token),
+    body: JSON.stringify({ description: 'Study Tracker – studijní plán (kalendář)', public: false, files: { [filename]: { content } } }),
+  });
+  if (!res.ok) throw new GithubError(gistError(res.status), res.status);
+  const json = (await res.json()) as { id: string; owner: { login: string } };
+  return { id: json.id, owner: json.owner.login };
+}
+
+export async function updateGist(token: string, id: string, filename: string, content: string): Promise<void> {
+  const res = await fetch(`https://api.github.com/gists/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: gistHeaders(token),
+    body: JSON.stringify({ files: { [filename]: { content } } }),
+  });
+  if (!res.ok) throw new GithubError(gistError(res.status), res.status);
+}

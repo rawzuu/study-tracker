@@ -1,0 +1,103 @@
+.topic-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.topic-row:last-child {
+  border-bottom: 0;
+}
+.topic-name {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 550;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topic-name:hover {
+  color: var(--accent);
+}
+.stage {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.stage i {
+  width: 6px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--panel-3);
+}
+.stage i.on {
+  background: var(--accent);
+}
+.topic-row .segmented button {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.load {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 4px;
+  height: 150px;
+  align-items: end;
+}
+.load-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  height: 100%;
+}
+.load-col i {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--line-strong);
+}
+.load-col i.today {
+  background: var(--accent);
+}
+.load-col .label {
+  font-size: 9.5px;
+  letter-spacing: 0;
+}
+
+@media (max-width: 760px) {
+  .topic-row {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .topic-row .grow {
+    flex-basis: 100%;
+  }
+  .topic-actions {
+    margin-left: auto;
+  }
+}
+.topic-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.topic-meta > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+}
+.topic-meta .num {
+  flex-shrink: 0;
+}

@@ -1,68 +1,130 @@
 import { useState } from 'react';
+import { Brain } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { Modal } from '../../components/ui';
 import { fmtDuration } from '../../lib/time';
 import { SubjectTag } from '../subjects/SubjectSelect';
+import { RATING_LABEL, RecallRating, applyStudy, topicSnapshots } from '../topics/schedule';
 import { useTimer } from './TimerContext';
 
 export const FOCUS_LABELS = ['', 'Rozptýlený', 'Spíš slabé', 'V pohodě', 'Soustředěný', 'Hluboký flow'];
-const FOCUS_EMOJI = ['', '😵‍💫', '😕', '🙂', '🎯', '🔥'];
 
-/** Po bloku práce se zeptá na hodnocení soustředění (1–5). */
-export function FocusRatingModal() {
+/**
+ * Po bloku práce: hodnocení soustředění, vybavení z hlavy (retrieval practice)
+ * a u tématu i to, jak šlo vybavování – podle toho se upraví plán opakování.
+ */
+export function AfterBlockModal() {
   const { pendingRating, clearRating } = useTimer();
   const { data, upsert } = useStore();
   const session = data.sessions.find((s) => s.id === pendingRating);
   const [focus, setFocus] = useState<number | null>(null);
+  const [recall, setRecall] = useState('');
   const [note, setNote] = useState('');
+  const [difficulty, setDifficulty] = useState<RecallRating | null>(null);
 
   if (!session) return null;
+  const { askFocusRating, askRecall } = data.settings;
+  const topic = session.topicId ? data.topics.find((t) => t.id === session.topicId) : undefined;
 
   const close = () => {
     setFocus(null);
+    setRecall('');
     setNote('');
+    setDifficulty(null);
+    if (pendingRating) topicSnapshots.delete(pendingRating);
     clearRating();
   };
+
   const save = () => {
-    upsert('sessions', { ...session, focus: focus ?? undefined, note: note.trim() || session.note });
+    upsert('sessions', {
+      ...session,
+      focus: focus ?? session.focus,
+      recall: recall.trim() || session.recall,
+      note: note.trim() || session.note,
+    });
+    // Plán opakování: při uložení sezení se počítalo s „Dobře“, tady ho případně opravíme.
+    const snap = topicSnapshots.get(session.id);
+    if (topic && snap && difficulty && difficulty !== 'ok') {
+      upsert('topics', { ...applyStudy(snap, session.end, difficulty), id: topic.id, createdAt: topic.createdAt });
+    }
     close();
   };
 
+  const dirty = focus != null || recall.trim() || note.trim() || difficulty;
+
   return (
     <Modal
-      title="Jak ses soustředil?"
+      title="Blok dokončen"
       onClose={close}
       footer={
         <>
           <button className="btn ghost" onClick={close}>
             Přeskočit
           </button>
-          <button className="btn primary" onClick={save} disabled={!focus && !note.trim()}>
+          <button className="btn primary" onClick={save} disabled={!dirty}>
             Uložit
           </button>
         </>
       }
     >
-      <div className="stack">
-        <div className="row between muted small">
-          <SubjectTag id={session.subjectId} />
-          <span className="num">{fmtDuration(session.durationSec)}</span>
+      <div className="stack" style={{ gap: 18 }}>
+        <div className="row between small">
+          <span className="row" style={{ gap: 8 }}>
+            <SubjectTag id={session.subjectId} />
+            {session.topic && <span className="faint">· {session.topic}</span>}
+          </span>
+          <span className="num muted">{fmtDuration(session.durationSec)}</span>
         </div>
-        <div className="rating">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} className={focus === n ? 'on' : ''} onClick={() => setFocus(n)} type="button">
-              <span className="emoji">{FOCUS_EMOJI[n]}</span>
-              <span className="n">{n}</span>
-              <span className="l">{FOCUS_LABELS[n]}</span>
-            </button>
-          ))}
-        </div>
-        <textarea
-          className="input"
-          placeholder="Poznámka (volitelné) – co šlo dobře, co ne…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
+
+        {askRecall && (
+          <div className="stack tight">
+            <div className="row" style={{ gap: 7 }}>
+              <Brain size={15} color="var(--accent)" />
+              <b style={{ fontWeight: 550 }}>Co si pamatuješ? Bez koukání do materiálů.</b>
+            </div>
+            <textarea
+              className="input"
+              autoFocus
+              placeholder="Napiš 2–3 hlavní myšlenky vlastními slovy…"
+              value={recall}
+              onChange={(e) => setRecall(e.target.value)}
+              style={{ minHeight: 92 }}
+            />
+            <span className="small faint">
+              Vybavování z hlavy (retrieval practice) je jedna z nejúčinnějších metod učení – Roediger &amp; Karpicke 2006.
+            </span>
+          </div>
+        )}
+
+        {topic && (
+          <div className="stack tight">
+            <span className="label">Jak šlo vybavení tématu „{topic.name}“?</span>
+            <div className="segmented" style={{ alignSelf: 'flex-start' }}>
+              {(['hard', 'ok', 'easy'] as RecallRating[]).map((r) => (
+                <button key={r} className={difficulty === r ? 'on' : ''} onClick={() => setDifficulty(r)} type="button">
+                  {RATING_LABEL[r]}
+                </button>
+              ))}
+            </div>
+            <span className="small faint">Podle toho se nastaví, kdy ti téma připomenu k zopakování.</span>
+          </div>
+        )}
+
+        {askFocusRating && (
+          <div className="stack tight">
+            <span className="label">Soustředění</span>
+            <div className="rating">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} className={focus === n ? 'on' : ''} onClick={() => setFocus(n)} type="button">
+                  <span className="n num">{n}</span>
+                  <span className="l">{FOCUS_LABELS[n]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <input className="input" placeholder="Poznámka (volitelné)" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
     </Modal>
   );

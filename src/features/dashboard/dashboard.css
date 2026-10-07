@@ -1,0 +1,42 @@
+.dash-timer .dash-timer-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 2px 0 4px;
+}
+.dash-timer .ring-time {
+  font-size: 40px;
+}
+.dash-timer .ring-sub .label {
+  display: none;
+}
+.intent {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  border-left: 2px solid var(--accent);
+  background: var(--panel);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-size: 13.5px;
+}
+.countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 44px;
+  flex-shrink: 0;
+  line-height: 1.1;
+}
+.countdown b {
+  font-size: 20px;
+  font-weight: 450;
+}
+.countdown .label {
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+.warn-text {
+  color: var(--warn);
+}

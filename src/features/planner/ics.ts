@@ -47,6 +47,7 @@ export function buildIcs(opts: {
   exams: Exam[];
   subjects: Subject[];
   alarmMin: number | null;
+  feed?: boolean; // odebíraný kalendář – přidá hinty pro obnovování
 }): string {
   const subj = new Map(opts.subjects.map((s) => [s.id, s]));
   const now = utc(Date.now());
@@ -58,6 +59,7 @@ export function buildIcs(opts: {
     'METHOD:PUBLISH',
     'X-WR-CALNAME:Studijní plán',
   ];
+  if (opts.feed) lines.push('REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H');
 
   for (const b of opts.blocks) {
     const name = subj.get(b.subjectId)?.name ?? 'Učení';

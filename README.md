@@ -12,6 +12,14 @@ Osobní aplikace na sledování času učení: časovače podložené výzkumem,
 - **Plánovač:** týdenní kalendář s přetahováním, opakované bloky, týdenní cíle, plán vs. realita.
 - **Zkoušky:** automaticky naplánované rozložené opakování (spacing effect).
 - **Export `.ics`:** pro Apple Kalendář, Google i Outlook.
+- **Opakování témat (v2):** každé téma se vrací po 1, 3, 7, 14, 30, 60 a 120 dnech; těžké vybavení interval zkrátí.
+- **Vybavení po bloku (v2):** po bloku krátce sepíšeš, co si pamatuješ (retrieval practice).
+- **Týdenní reflexe (v2):** souhrn týdne, 3 otázky a jedna věc, kterou změníš – zobrazí se na přehledu.
+- **Měsíční report (v2):** postřehy, nejsilnější dny a hodiny, chronotyp, srovnání předmětů s minulým měsícem, tisk do PDF.
+- **Šum na soustředění (v2):** hnědý, růžový nebo bílý šum generovaný v prohlížeči.
+- **Odebíraný kalendář (v2):** plán se publikuje do tajného gistu a Apple Kalendář se aktualizuje sám.
+- **Měsíční pohled v plánovači a export CSV (v2).**
+- **Průvodce pro nové uživatele (v2)** – kamarádi si nastaví vlastní zálohu na svůj GitHub.
 - **Tmavý (výchozí) i světlý režim.** Funguje na mobilu a jde přidat na plochu (PWA, offline).
 
 ## Kde jsou data a proč se neztratí
@@ -25,6 +33,17 @@ Osobní aplikace na sledování času učení: časovače podložené výzkumem,
 - Kód (toto repo) a data (soukromé repo) jsou **úplně oddělené**. Nasazení nové verze na data nesahá.
 - Synchronizace slučuje data po jednotlivých záznamech (vyhrává novější `updatedAt`). Mazání je „měkké“ (`deletedAt`), takže se nic neztratí ani při práci na dvou zařízeních.
 - Data mají `schemaVersion`. Při změně struktury se použije migrace v [`src/data/migrations.ts`](src/data/migrations.ts) a před migrací se lokálně uloží záloha.
+- Nové funkce data jen **přidávají** (nová pole a kolekce), takže starší verze aplikace je umí načíst a nic z nich nesmažou.
+
+## Návrat na starší verzi
+
+Každá verze je uložená jako [release](https://github.com/rawzuu/study-tracker/releases).
+
+1. Otevři **Actions → Deploy na GitHub Pages → Run workflow**.
+2. Do pole *verze* napiš tag, např. `v1.0.0`, a spusť.
+3. Za ~1 minutu běží na stránce zvolená verze. Zpět na nejnovější: spusť znovu s prázdným polem.
+
+Data zůstávají v soukromém repu nedotčená (záloha stavu před v2: tag `zaloha-pred-v2` v `study-tracker-data`).
 
 ### Připojení synchronizace (jednou na zařízení)
 

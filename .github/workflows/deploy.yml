@@ -3,7 +3,14 @@ name: Deploy na GitHub Pages
 on:
   push:
     branches: [main]
+  # Ruční nasazení – i návrat na starší verzi:
+  # Actions → „Deploy na GitHub Pages“ → Run workflow → do pole verze napiš např. v1.0.0
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Verze k nasazení (tag, např. v1.0.0). Prázdné = nejnovější main.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -19,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22

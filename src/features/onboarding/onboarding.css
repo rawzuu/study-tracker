@@ -1,0 +1,60 @@
+.onboarding {
+  position: relative;
+  width: min(520px, 100%);
+  padding: 26px 26px 22px;
+}
+.onboarding h1 {
+  font-size: 26px;
+}
+.ob-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+.ob-steps {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 22px;
+}
+.ob-steps i {
+  width: 24px;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--panel-3);
+}
+.ob-steps i.on {
+  background: var(--accent);
+}
+.ob-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.ob-list li {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.ob-list b {
+  color: var(--text);
+  font-weight: 550;
+}
+.ob-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ob-option {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+}
+.ob-option svg {
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}

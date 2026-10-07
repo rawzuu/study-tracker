@@ -2,8 +2,10 @@
  * Datové schéma aplikace.
  *
  * PRAVIDLA PRO ZMĚNY (aby se nikdy neztratila data):
- *  1. Když měníš tvar dat, zvyš SCHEMA_VERSION o 1.
- *  2. Do `migrations.ts` přidej funkci, která převede data z předchozí verze na novou.
+ *  1. Přidání NOVÉHO volitelného pole nebo nové kolekce verzi nemění – starší verze aplikace
+ *     neznámá pole jen ignorují (a nesmažou). Tak zůstává možný návrat na starší release.
+ *  2. Když měníš tvar EXISTUJÍCÍCH dat (přejmenování, jiný typ), zvyš SCHEMA_VERSION o 1
+ *     a do `migrations.ts` přidej převodní funkci.
  *  3. Nikdy nemaž ani nepřejmenovávej pole bez migrace.
  *  4. Každá entita má `id`, `createdAt`, `updatedAt` a volitelně `deletedAt`.
  *     Mazání je "měkké" (nastaví se deletedAt), díky tomu funguje synchronizace mezi zařízeními.
@@ -35,6 +37,29 @@ export interface Session extends Entity {
   focus?: number; // 1–5
   interruptions: number;
   note: string;
+  topicId?: string; // v1.1+: odkaz na téma
+  recall?: string; // v1.1+: co si pamatuješ po bloku (retrieval practice)
+}
+
+/** Téma/kapitola předmětu s plánem rozloženého opakování. (v1.1+) */
+export interface Topic extends Entity {
+  subjectId: string;
+  name: string;
+  stage: number; // -1 = ještě neučeno, 0.. = index intervalu opakování
+  lastStudiedAt?: number;
+  nextReviewAt?: number;
+  reviews: number;
+  mastered: boolean; // zvládnuto – už se neopakuje
+  note: string;
+}
+
+/** Týdenní reflexe. (v1.1+) */
+export interface Reflection extends Entity {
+  weekStart: string; // YYYY-MM-DD (pondělí)
+  rating: number; // 1–5
+  wentWell: string;
+  blocked: string;
+  focusNext: string;
 }
 
 export interface PlanBlock extends Entity {
@@ -64,6 +89,14 @@ export interface TimerPreset extends Entity {
 }
 
 export type ThemePref = 'dark' | 'light' | 'system';
+export type NoiseType = 'off' | 'brown' | 'pink' | 'white';
+
+export interface CalendarFeed {
+  gistId: string;
+  owner: string;
+  includeExams: boolean;
+  alarmMin: number | null;
+}
 
 export interface Settings {
   updatedAt: number;
@@ -78,6 +111,12 @@ export interface Settings {
   askFocusRating: boolean;
   flowtimeRatio: number; // pauza = práce / ratio
   minSessionSec: number; // kratší sezení se neukládají
+  // v1.1+
+  askRecall: boolean;
+  noiseType: NoiseType;
+  noiseVolume: number;
+  weeklyReflection: boolean;
+  calendarFeed: CalendarFeed | null;
 }
 
 export interface AppData {
@@ -87,24 +126,26 @@ export interface AppData {
   planBlocks: PlanBlock[];
   exams: Exam[];
   presets: TimerPreset[];
+  topics: Topic[];
+  reflections: Reflection[];
   settings: Settings;
 }
 
 /** Kolekce entit, které se slučují po jednotlivých záznamech. */
-export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets'] as const;
+export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets', 'topics', 'reflections'] as const;
 export type CollectionKey = (typeof COLLECTIONS)[number];
 
 export const SUBJECT_COLORS = [
   '#7c8cff', // indigo
-  '#5eead4', // teal
+  '#3dd68c', // green
   '#f472b6', // pink
-  '#fbbf24', // amber
-  '#60a5fa', // blue
+  '#5eb1ef', // blue
+  '#ffb224', // amber
   '#a78bfa', // violet
-  '#4ade80', // green
-  '#fb923c', // orange
-  '#f87171', // red
-  '#22d3ee', // cyan
+  '#ff7a59', // coral
+  '#2ec8b6', // teal
+  '#e5e5e5', // light
+  '#c2a878', // sand
 ];
 
 export function defaultSettings(): Settings {
@@ -121,6 +162,11 @@ export function defaultSettings(): Settings {
     askFocusRating: true,
     flowtimeRatio: 5,
     minSessionSec: 60,
+    askRecall: true,
+    noiseType: 'off',
+    noiseVolume: 0.35,
+    weeklyReflection: true,
+    calendarFeed: null,
   };
 }
 
@@ -132,6 +178,8 @@ export function emptyData(): AppData {
     planBlocks: [],
     exams: [],
     presets: [],
+    topics: [],
+    reflections: [],
     settings: defaultSettings(),
   };
 }

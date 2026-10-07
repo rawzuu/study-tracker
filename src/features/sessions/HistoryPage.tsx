@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, Pencil, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, FileSpreadsheet, Pencil, Plus, Trash2 } from 'lucide-react';
+import { sessionsToCsv } from '../../lib/csv';
+import { downloadFile } from '../planner/ics';
+import { applyStudy, findTopic, newTopic } from '../topics/schedule';
 import { useStore } from '../../data/store';
 import { Session, alive, uid } from '../../data/schema';
 import { Empty, Field, Modal } from '../../components/ui';
@@ -19,9 +22,19 @@ export function SessionModal({ session, onClose }: { session?: Session; onClose:
   const [focus, setFocus] = useState<number>(session?.focus ?? 0);
   const [note, setNote] = useState(session?.note ?? '');
 
+  const { data } = useStore();
   const save = () => {
     if (!subjectId || minutes <= 0) return;
     const s = fromLocalInput(start);
+    // Nové ruční sezení s tématem posune i plán opakování tématu.
+    let topicId = session?.topicId;
+    const tName = topic.trim();
+    if (!session && tName) {
+      const base = findTopic(data.topics, subjectId, tName) ?? newTopic(subjectId, tName);
+      const next = applyStudy(base, s + minutes * 60_000, 'ok');
+      upsert('topics', next);
+      topicId = next.id;
+    }
     const durationSec = minutes * 60;
     // U časovačových sezení zachováme skutečný konec (včetně pauz), pokud se nezměnil začátek.
     const end = session && session.start === s ? Math.max(session.end, s + durationSec * 1000) : s + durationSec * 1000;
@@ -34,6 +47,7 @@ export function SessionModal({ session, onClose }: { session?: Session; onClose:
       durationSec,
       focus: focus || undefined,
       note: note.trim(),
+      topicId,
     } as Session);
     onClose();
   };
@@ -120,14 +134,20 @@ export function HistoryPage() {
       <div className="page-head">
         <div>
           <h1>Historie</h1>
-          <p>Všechna sezení. Zapomněl jsi spustit časovač? Zapiš ho ručně.</p>
+          <p>Všechna sezení. Časovač neběžel? Zapiš sezení ručně.</p>
         </div>
         <div className="row wrap">
           <div style={{ width: 220 }}>
             <SubjectSelect value={subjectId} onChange={setSubjectId} allowAll />
           </div>
+          <button
+            className="btn"
+            onClick={() => downloadFile(`study-tracker-sezeni-${dayKey(Date.now())}.csv`, sessionsToCsv(data.sessions, data.subjects, data.presets), 'text/csv;charset=utf-8')}
+          >
+            <FileSpreadsheet size={14} /> CSV
+          </button>
           <button className="btn primary" onClick={() => setEditing('new')}>
-            <Plus size={16} /> Ruční zápis
+            <Plus size={15} /> Ruční zápis
           </button>
         </div>
       </div>
@@ -156,6 +176,7 @@ export function HistoryPage() {
                         .filter(Boolean)
                         .join(' · ')}
                     </div>
+                    {s.recall && <div className="recall small">{s.recall}</div>}
                   </div>
                   {s.focus && <span className="chip">{s.focus}/5</span>}
                   <span className="num" style={{ fontWeight: 600, minWidth: 64, textAlign: 'right' }}>

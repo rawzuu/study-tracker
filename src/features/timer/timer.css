@@ -1,21 +1,17 @@
-.timer-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
 .timer-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
-  padding: 36px 20px 28px;
+  padding: 44px 20px 32px;
+  min-height: 560px;
+  justify-content: center;
 }
 .zen-toggle {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px;
+  right: 10px;
 }
 
 .ring {
@@ -26,25 +22,41 @@
 .ring svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+}
+.tick {
+  stroke: var(--line-strong);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+}
+.tick.major {
+  stroke: var(--text-3);
+  stroke-width: 1.1;
+}
+.tick.lit {
+  stroke: var(--accent);
+}
+.is-break .tick.lit {
+  stroke: var(--break);
 }
 .ring-track {
   fill: none;
-  stroke: var(--surface-3);
-  stroke-width: 10;
+  stroke: var(--panel-3);
+  stroke-width: 2;
 }
 .ring-progress {
   fill: none;
-  stroke-width: 10;
+  stroke: var(--accent);
+  stroke-width: 2;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.35s linear;
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 45%, transparent));
 }
 .ring.is-break .ring-progress {
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--break) 45%, transparent));
+  stroke: var(--break);
 }
-.ring.paused .ring-progress {
-  opacity: 0.45;
+.ring.paused .ring-progress,
+.ring.paused .tick.lit {
+  opacity: 0.4;
 }
 .ring-center {
   position: absolute;
@@ -53,48 +65,46 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
+}
+.ring-phase {
+  color: var(--accent);
+}
+.is-break .ring-phase {
+  color: var(--break);
 }
 .ring-time {
-  font-size: clamp(44px, 12vw, 68px);
-  font-weight: 650;
-  letter-spacing: -0.04em;
+  font-size: clamp(46px, 11vw, 76px);
+  font-weight: 400;
+  letter-spacing: -0.06em;
   line-height: 1;
 }
 .ring.paused .ring-time {
   animation: blink 1.6s ease-in-out infinite;
 }
-@keyframes blink {
-  50% {
-    opacity: 0.45;
-  }
-}
 .ring-sub {
-  color: var(--text-muted);
-  font-size: 13px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 .rounds {
   display: flex;
-  gap: 6px;
+  gap: 5px;
 }
 .rounds i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--surface-3);
+  width: 14px;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--panel-3);
 }
 .rounds i.on {
   background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
 }
 
 .controls {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -104,18 +114,19 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .break-tip {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  max-width: 440px;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
+  max-width: 460px;
+  padding: 11px 13px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--break) 30%, transparent);
   background: var(--break-soft);
-  color: var(--text);
-  font-size: 13.5px;
+  font-size: 13px;
 }
 .break-tip svg {
   color: var(--break);
@@ -126,100 +137,104 @@
 .modes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 .mode {
   text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 11px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-2);
+  gap: 2px;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
   color: var(--text);
   font: inherit;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.12s, background 0.12s;
 }
 .mode:hover:not(:disabled) {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
+  border-color: var(--line-strong);
+  background: var(--panel-2);
 }
 .mode.on {
-  border-color: var(--accent);
+  border-color: var(--accent-line);
   background: var(--accent-soft);
 }
 .mode:disabled:not(.on) {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
+}
+.mode-name {
+  font-weight: 550;
+  font-size: 13px;
+}
+.mode-tag {
+  font-size: 11px;
+  color: var(--text-3);
 }
 .mode-check {
   color: var(--accent);
 }
 .mode-info {
   margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.zen .timer-layout {
-  grid-template-columns: 1fr;
-  min-height: calc(100vh - 100px);
-  align-content: center;
-}
 .zen .timer-card {
+  min-height: calc(100vh - 60px);
   background: transparent;
   border-color: transparent;
-  box-shadow: none;
 }
 
 .rating {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 .rating button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 12px 4px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-2);
+  gap: 3px;
+  padding: 10px 4px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: transparent;
   color: var(--text);
   font: inherit;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.12s;
 }
 .rating button:hover {
-  border-color: var(--border-strong);
+  background: var(--panel-2);
 }
 .rating button.on {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
-.rating .emoji {
-  font-size: 22px;
+.rating button.on .n {
+  color: var(--accent);
 }
 .rating .n {
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 500;
 }
 .rating .l {
-  font-size: 11px;
-  color: var(--text-muted);
+  font-size: 10.5px;
+  color: var(--text-3);
   text-align: center;
   line-height: 1.2;
 }
 
-@media (max-width: 1000px) {
-  .timer-layout {
-    grid-template-columns: 1fr;
+@media (max-width: 860px) {
+  .timer-card {
+    min-height: 0;
+    padding: 36px 14px 24px;
   }
 }
 @media (max-width: 520px) {

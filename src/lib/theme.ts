@@ -16,7 +16,7 @@ export function useApplyTheme(pref: ThemePref): ResolvedTheme {
   // Nastavujeme hned při renderu (ne až v efektu), aby grafy v potomcích četly už nové barvy.
   if (document.documentElement.dataset.theme !== resolved) document.documentElement.dataset.theme = resolved;
   useEffect(() => {
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#0b0d12' : '#f4f5f9');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#0a0a0a' : '#f6f6f4');
   }, [resolved]);
   return resolved;
 }

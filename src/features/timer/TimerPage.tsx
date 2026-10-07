@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Coffee, Maximize2, Minimize2, Pause, Play, SkipForward, Square, Zap, BellOff, Check, Info } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { BellOff, Check, Coffee, Headphones, Maximize2, Minimize2, Pause, Play, SkipForward, Square } from 'lucide-react';
 import { useStore } from '../../data/store';
-import { alive } from '../../data/schema';
+import { NoiseType, alive } from '../../data/schema';
 import { fmtClock, fmtDuration, startOfDay } from '../../lib/time';
 import { inRange, totalSec } from '../../lib/stats';
+import { NOISE_LABEL, startNoise, stopNoise } from '../../lib/noise';
+import { unlockAudio } from '../../lib/alerts';
+import { Segmented } from '../../components/ui';
 import { SubjectSelect } from '../subjects/SubjectSelect';
 import { BREAK_TIPS, Evidence, allModes } from './modes';
 import { useTimer } from './TimerContext';
@@ -16,50 +19,58 @@ const EVIDENCE_CHIP: Record<Evidence, string> = {
   nástroj: '',
 };
 
-export function TimerRing({ size = 320 }: { size?: number }) {
+/** Ciferník s ryskami po minutách – jako stopky. */
+export function TimerRing({ size = 340 }: { size?: number }) {
   const { state, mode, elapsedMs, remainingMs, progress } = useTimer();
   const isBreak = state.phase !== 'work';
-  const r = (size - 24) / 2;
-  const c = 2 * Math.PI * r;
   const idle = state.status === 'idle';
   const countUp = idle ? mode.workMin == null : remainingMs == null;
   const p = idle ? 0 : countUp ? (elapsedMs % 3_600_000) / 3_600_000 : progress;
   const display = idle ? fmtClock((mode.workMin ?? 0) * 60_000) : countUp ? fmtClock(elapsedMs) : fmtClock(remainingMs ?? 0);
-  const label =
-    state.status === 'idle'
-      ? 'Připraveno'
-      : state.phase === 'work'
-        ? 'Učení'
-        : state.phase === 'long'
-          ? 'Dlouhá pauza'
-          : 'Pauza';
+  const label = idle ? 'připraveno' : state.phase === 'work' ? 'učení' : state.phase === 'long' ? 'dlouhá pauza' : 'pauza';
+
+  const V = 200; // viewBox
+  const cx = V / 2;
+  const rTicks = 96;
+  const rArc = 84;
+  const circ = 2 * Math.PI * rArc;
+  const ticks = Array.from({ length: 60 }, (_, i) => {
+    const a = (i / 60) * Math.PI * 2 - Math.PI / 2;
+    const major = i % 5 === 0;
+    const r1 = rTicks - (major ? 7 : 3.5);
+    const lit = i / 60 < p;
+    return (
+      <line
+        key={i}
+        x1={cx + Math.cos(a) * r1}
+        y1={cx + Math.sin(a) * r1}
+        x2={cx + Math.cos(a) * rTicks}
+        y2={cx + Math.sin(a) * rTicks}
+        className={`tick ${major ? 'major' : ''} ${lit ? 'lit' : ''}`}
+      />
+    );
+  });
 
   return (
     <div className={`ring ${isBreak ? 'is-break' : ''} ${state.status}`} style={{ width: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <defs>
-          <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={isBreak ? 'var(--break)' : 'var(--accent)'} />
-            <stop offset="100%" stopColor={isBreak ? '#86efac' : '#c084fc'} />
-          </linearGradient>
-        </defs>
-        <circle cx={size / 2} cy={size / 2} r={r} className="ring-track" />
+      <svg viewBox={`0 0 ${V} ${V}`}>
+        <g>{ticks}</g>
+        <circle cx={cx} cy={cx} r={rArc} className="ring-track" />
         <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
+          cx={cx}
+          cy={cx}
+          r={rArc}
           className="ring-progress"
-          stroke="url(#ringGrad)"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - p)}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          strokeDasharray={circ}
+          strokeDashoffset={circ * (1 - p)}
+          transform={`rotate(-90 ${cx} ${cx})`}
         />
       </svg>
       <div className="ring-center">
-        <span className={`chip ${isBreak ? 'break' : 'accent'}`}>{label}</span>
+        <span className="ring-phase label">{label}</span>
         <div className="ring-time num">{display}</div>
         <div className="ring-sub">
-          {mode.name}
+          <span className="label">{mode.name}</span>
           {mode.kind === 'interval' && mode.roundsBeforeLong < 99 && (
             <span className="rounds">
               {Array.from({ length: mode.roundsBeforeLong }, (_, i) => (
@@ -83,8 +94,8 @@ export function TimerControls({ compact }: { compact?: boolean }) {
   if (state.status === 'idle') {
     return (
       <div className="controls">
-        <button className={`btn primary ${sz} round`} onClick={t.start} disabled={!canStart}>
-          <Play size={18} fill="currentColor" /> Začít učení
+        <button className={`btn primary ${sz}`} onClick={t.start} disabled={!canStart}>
+          <Play size={16} fill="currentColor" /> Začít učení
         </button>
       </div>
     );
@@ -92,16 +103,16 @@ export function TimerControls({ compact }: { compact?: boolean }) {
   if (state.status === 'ready') {
     return (
       <div className="controls">
-        <button className={`btn ${isWork ? 'primary' : 'break'} ${sz} round`} onClick={t.start}>
-          {isWork ? <Play size={18} fill="currentColor" /> : <Coffee size={18} />}
+        <button className={`btn ${isWork ? 'primary' : 'break'} ${sz}`} onClick={t.start}>
+          {isWork ? <Play size={16} fill="currentColor" /> : <Coffee size={16} />}
           {isWork ? 'Další blok' : 'Začít pauzu'}
         </button>
         {!isWork && (
-          <button className={`btn ${sz} round`} onClick={t.skip}>
-            <SkipForward size={17} /> Bez pauzy
+          <button className={`btn ${sz}`} onClick={t.skip}>
+            <SkipForward size={15} /> Bez pauzy
           </button>
         )}
-        <button className={`btn ghost ${sz} round`} onClick={t.discard}>
+        <button className={`btn ghost ${sz}`} onClick={t.discard}>
           Ukončit
         </button>
       </div>
@@ -110,28 +121,90 @@ export function TimerControls({ compact }: { compact?: boolean }) {
   return (
     <div className="controls">
       {state.status === 'running' ? (
-        <button className={`btn ${sz} round`} onClick={t.pause}>
-          <Pause size={18} fill="currentColor" /> Pauza
+        <button className={`btn ${sz}`} onClick={t.pause}>
+          <Pause size={16} fill="currentColor" /> Pozastavit
         </button>
       ) : (
-        <button className={`btn ${isWork ? 'primary' : 'break'} ${sz} round`} onClick={t.resume}>
-          <Play size={18} fill="currentColor" /> Pokračovat
+        <button className={`btn ${isWork ? 'primary' : 'break'} ${sz}`} onClick={t.resume}>
+          <Play size={16} fill="currentColor" /> Pokračovat
         </button>
       )}
       {isWork && mode.kind !== 'stopwatch' && (
-        <button className={`btn ${sz} round`} onClick={t.finishWork} title="Uložit blok a jít na pauzu">
-          <Coffee size={17} /> {mode.kind === 'flowtime' ? 'Na pauzu' : 'Hotovo'}
+        <button className={`btn ${sz}`} onClick={t.finishWork} title="Uložit blok a jít na pauzu">
+          <Coffee size={15} /> {mode.kind === 'flowtime' ? 'Na pauzu' : 'Hotovo'}
         </button>
       )}
       {isWork ? (
-        <button className={`btn ghost ${sz} round`} onClick={t.stop} title="Uložit a ukončit">
-          <Square size={15} fill="currentColor" /> Ukončit
+        <button className={`btn ghost ${sz}`} onClick={t.stop} title="Uložit a ukončit">
+          <Square size={13} fill="currentColor" /> Ukončit
         </button>
       ) : (
-        <button className={`btn ghost ${sz} round`} onClick={t.skip}>
-          <SkipForward size={17} /> Přeskočit
+        <button className={`btn ghost ${sz}`} onClick={t.skip}>
+          <SkipForward size={15} /> Přeskočit
         </button>
       )}
+    </div>
+  );
+}
+
+function NoiseControl() {
+  const { data, setSettings } = useStore();
+  const { state } = useTimer();
+  const { noiseType, noiseVolume } = data.settings;
+  const [preview, setPreview] = useState(false);
+  const previewTimer = useRef<number | undefined>(undefined);
+  const active = state.status === 'running' && state.phase === 'work';
+
+  const tryIt = () => {
+    if (noiseType === 'off') return;
+    unlockAudio();
+    startNoise(noiseType, noiseVolume);
+    setPreview(true);
+    window.clearTimeout(previewTimer.current);
+    previewTimer.current = window.setTimeout(() => {
+      setPreview(false);
+      stopNoise();
+    }, 5000);
+  };
+  useEffect(() => () => window.clearTimeout(previewTimer.current), []);
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <h2 className="row" style={{ gap: 8 }}>
+          <Headphones size={15} /> Šum na soustředění
+        </h2>
+        <span className="chip warn">důkazy: smíšené</span>
+      </div>
+      <div className="stack">
+        <Segmented<NoiseType>
+          value={noiseType}
+          onChange={(v) => setSettings({ noiseType: v })}
+          options={(['off', 'brown', 'pink', 'white'] as NoiseType[]).map((v) => ({ value: v, label: NOISE_LABEL[v] }))}
+        />
+        {noiseType !== 'off' && (
+          <div className="row">
+            <input
+              type="range"
+              min={0.05}
+              max={1}
+              step={0.05}
+              value={noiseVolume}
+              onChange={(e) => setSettings({ noiseVolume: Number(e.target.value) })}
+              className="grow"
+            />
+            {!active && (
+              <button className="btn sm" onClick={tryIt} disabled={preview}>
+                {preview ? 'Hraje…' : 'Vyzkoušet'}
+              </button>
+            )}
+          </div>
+        )}
+        <p className="small faint">
+          Hraje automaticky jen během bloku učení. Některým lidem (hlavně s ADHD) šum pomáhá udržet pozornost, jiným spíš vadí.
+          Hnědý je nejhlubší a nejméně rušivý.
+        </p>
+      </div>
     </div>
   );
 }
@@ -147,6 +220,7 @@ export function TimerPage() {
   const sessions = alive(data.sessions);
   const todaySec = totalSec(inRange(sessions, startOfDay(Date.now()), Date.now() + 1));
   const subject = data.subjects.find((s) => s.id === state.subjectId);
+  const subjectTopics = data.topics.filter((x) => !x.deletedAt && !x.mastered && x.subjectId === state.subjectId);
 
   // Mezerník = start / pauza
   useEffect(() => {
@@ -170,27 +244,30 @@ export function TimerPage() {
         <div className="page-head">
           <div>
             <h1>Časovač</h1>
-            <p>Vyber předmět a režim, pak se pusť do práce. Mezerník spustí nebo pozastaví.</p>
+            <p>Vyber předmět a režim. Mezerník spustí nebo pozastaví.</p>
           </div>
-          <div className="chip accent num">
-            Dnes {fmtDuration(todaySec)}
-            {goal > 0 && ` / ${fmtDuration(goal)}`}
+          <div className="row">
+            <span className="label">dnes</span>
+            <span className="num" style={{ fontSize: 15 }}>
+              {fmtDuration(todaySec, { short: true })}
+              {goal > 0 && <span className="faint"> / {fmtDuration(goal, { short: true })}</span>}
+            </span>
           </div>
         </div>
       )}
 
-      <div className="timer-layout">
-        <div className="card timer-card">
+      <div className="g12" style={{ alignItems: 'start' }}>
+        <div className={`card timer-card ${zen ? 'c-12' : 'c-7 xl-8'}`}>
           <button className="btn ghost icon sm zen-toggle" onClick={() => setZen(!zen)} title={zen ? 'Ukončit zen režim' : 'Zen režim'}>
-            {zen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            {zen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
-          <TimerRing size={zen ? 380 : 320} />
+          <TimerRing size={zen ? 440 : 360} />
 
           {subject && state.status !== 'idle' && (
             <div className="now-studying">
               <span className="dot" style={{ background: subject.color }} />
-              <b>{subject.name}</b>
-              {state.topic && <span className="muted">· {state.topic}</span>}
+              <span>{subject.name}</span>
+              {state.topic && <span className="faint">/ {state.topic}</span>}
             </div>
           )}
 
@@ -198,72 +275,83 @@ export function TimerPage() {
 
           {state.phase === 'work' && state.status !== 'idle' && state.status !== 'ready' && (
             <button className="btn ghost sm" onClick={t.addInterruption} title="Zaznamenej, když tě něco vyruší">
-              <BellOff size={14} /> Vyrušení{state.interruptions > 0 && `: ${state.interruptions}`}
+              <BellOff size={13} /> Vyrušení <span className="num">{state.interruptions}</span>
             </button>
           )}
 
           {state.phase !== 'work' && (
             <div className="break-tip">
-              <Coffee size={16} />
+              <Coffee size={15} />
               <span>{BREAK_TIPS[(tip + state.round) % BREAK_TIPS.length]}</span>
             </div>
           )}
-          {state.status === 'idle' && !state.subjectId && <p className="faint small">Nejdřív vyber předmět vpravo.</p>}
+          {state.status === 'idle' && !state.subjectId && <p className="faint small">Nejdřív vyber předmět.</p>}
         </div>
 
         {!zen && (
-          <div className="stack">
-            <div className="card stack">
-              <h2>Co se učíš</h2>
-              <SubjectSelect value={state.subjectId} onChange={(id) => t.configure({ subjectId: id })} disabled={locked && state.phase === 'work' && state.status !== 'ready'} />
-              <input
-                className="input"
-                placeholder="Téma (např. derivace, kapitola 4…)"
-                value={state.topic}
-                onChange={(e) => t.configure({ topic: e.target.value })}
-              />
+          <div className="stack loose c-5 xl-4">
+            <div className="card">
+              <div className="card-head">
+                <h2>Co se učíš</h2>
+              </div>
+              <div className="stack">
+                <SubjectSelect
+                  value={state.subjectId}
+                  onChange={(id) => t.configure({ subjectId: id })}
+                  disabled={locked && state.phase === 'work' && state.status !== 'ready'}
+                />
+                <input
+                  className="input"
+                  list="topic-suggestions"
+                  placeholder="Téma (např. derivace, kapitola 4…)"
+                  value={state.topic}
+                  onChange={(e) => t.configure({ topic: e.target.value })}
+                />
+                <datalist id="topic-suggestions">
+                  {subjectTopics.map((x) => (
+                    <option key={x.id} value={x.name} />
+                  ))}
+                </datalist>
+                <span className="small faint">Téma se uloží do Opakování a aplikace ti ho připomene ve správný čas.</span>
+              </div>
             </div>
 
             <div className="card">
               <div className="card-head">
                 <h2>Režim</h2>
-                {locked && <span className="sub">Změníš po ukončení</span>}
+                {locked ? (
+                  <span className="sub">změníš po ukončení</span>
+                ) : (
+                  data.settings.defaultMode !== state.modeId && (
+                    <button className="btn ghost sm" onClick={() => setSettings({ defaultMode: state.modeId })}>
+                      Nastavit jako výchozí
+                    </button>
+                  )
+                )}
               </div>
               <div className="modes">
                 {modes.map((m) => (
-                  <button
-                    key={m.id}
-                    className={`mode ${m.id === state.modeId ? 'on' : ''}`}
-                    disabled={locked}
-                    onClick={() => {
-                      t.configure({ modeId: m.id });
-                    }}
-                  >
+                  <button key={m.id} className={`mode ${m.id === state.modeId ? 'on' : ''}`} disabled={locked} onClick={() => t.configure({ modeId: m.id })}>
                     <div className="row between">
-                      <b>{m.name}</b>
-                      {m.id === state.modeId && <Check size={15} className="mode-check" />}
+                      <span className="mode-name">{m.name}</span>
+                      {m.id === state.modeId && <Check size={14} className="mode-check" />}
                     </div>
-                    <span className="small muted">{m.tagline}</span>
+                    <span className="mode-tag num">{m.tagline}</span>
                   </button>
                 ))}
               </div>
               <div className="mode-info">
                 <div className="row between">
-                  <b className="row" style={{ gap: 6 }}>
-                    <Info size={15} /> {mode.name}
-                  </b>
+                  <span className="label">o metodě</span>
                   <span className={`chip ${EVIDENCE_CHIP[mode.evidence]}`}>
                     {mode.evidence === 'nástroj' ? 'nástroj' : `důkazy: ${mode.evidence}`}
                   </span>
                 </div>
                 <p className="small muted">{mode.description}</p>
               </div>
-              {!locked && data.settings.defaultMode !== state.modeId && (
-                <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={() => setSettings({ defaultMode: state.modeId })}>
-                  <Zap size={14} /> Nastavit jako výchozí
-                </button>
-              )}
             </div>
+
+            <NoiseControl />
           </div>
         )}
       </div>
