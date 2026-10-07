@@ -1289,3 +1289,51 @@ input[type='color'].input {
   break-inside: avoid;
   margin-bottom: var(--gap);
 }
+
+/* Hodnocení vybavení (FSRS) */
+.grades {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.grade {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.grade b {
+  font-weight: 600;
+  font-size: 13px;
+}
+.grade span {
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.25;
+}
+.grade:hover {
+  background: var(--panel-2);
+}
+.grade.on {
+  border-color: var(--g);
+  background: color-mix(in srgb, var(--g) 10%, transparent);
+}
+.grade.on b {
+  color: var(--g);
+}
+.grade-again { --g: var(--danger); }
+.grade-hard { --g: var(--warn); }
+.grade-ok { --g: var(--success); }
+.grade-easy { --g: #5eb1ef; }
+@media (max-width: 520px) {
+  .grades {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -4,7 +4,7 @@ import { useStore } from '../../data/store';
 import { Modal } from '../../components/ui';
 import { fmtDuration } from '../../lib/time';
 import { SubjectTag } from '../subjects/SubjectSelect';
-import { RATING_LABEL, RecallRating, applyStudy, topicSnapshots } from '../topics/schedule';
+import { RATINGS, RATING_HINT, RATING_LABEL, RecallRating, applyStudy, ctxFrom, topicSnapshots } from '../topics/schedule';
 import { useTimer } from './TimerContext';
 
 export const FOCUS_LABELS = ['', 'Rozptýlený', 'Spíš slabé', 'V pohodě', 'Soustředěný', 'Hluboký flow'];
@@ -45,7 +45,7 @@ export function AfterBlockModal() {
     // Plán opakování: při uložení sezení se počítalo s „Dobře“, tady ho případně opravíme.
     const snap = topicSnapshots.get(session.id);
     if (topic && snap && difficulty && difficulty !== 'ok') {
-      upsert('topics', { ...applyStudy(snap, session.end, difficulty), id: topic.id, createdAt: topic.createdAt });
+      upsert('topics', { ...applyStudy(snap, session.end, difficulty, ctxFrom(data)), id: topic.id, createdAt: topic.createdAt });
     }
     close();
   };
@@ -99,14 +99,15 @@ export function AfterBlockModal() {
         {topic && (
           <div className="stack tight">
             <span className="label">Jak šlo vybavení tématu „{topic.name}“?</span>
-            <div className="segmented" style={{ alignSelf: 'flex-start' }}>
-              {(['hard', 'ok', 'easy'] as RecallRating[]).map((r) => (
-                <button key={r} className={difficulty === r ? 'on' : ''} onClick={() => setDifficulty(r)} type="button">
-                  {RATING_LABEL[r]}
+            <div className="grades">
+              {RATINGS.map((r) => (
+                <button key={r} className={`grade grade-${r} ${difficulty === r ? 'on' : ''}`} onClick={() => setDifficulty(r)} type="button">
+                  <b>{RATING_LABEL[r]}</b>
+                  <span>{RATING_HINT[r]}</span>
                 </button>
               ))}
             </div>
-            <span className="small faint">Podle toho se nastaví, kdy ti téma připomenu k zopakování.</span>
+            <span className="small faint">Algoritmus FSRS podle toho spočítá, kdy ti téma připomenout. Bez výběru se počítá s „Dobře“.</span>
           </div>
         )}
 

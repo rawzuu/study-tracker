@@ -1,16 +1,18 @@
 import { useMemo } from 'react';
-import { AppData, alive } from '../../data/schema';
+import { Check } from 'lucide-react';
+import { AppData, PlanBlock, Session, alive } from '../../data/schema';
 import { DAY, addDays, dayKey, fmtDuration, fmtTime, startOfDay, startOfWeek, WEEKDAYS_SHORT } from '../../lib/time';
-import { byDay } from '../../lib/stats';
 
-/** Měsíční přehled: plán, zkoušky a odučený čas po dnech. Klik na den otevře jeho týden. */
+/** Měsíční přehled: odučeno po předmětech (barevně), plán a zkoušky. Klik na den otevře jeho týden. */
 export function MonthView({
   data,
   monthStart,
+  layer,
   onOpenDay,
 }: {
   data: AppData;
   monthStart: number;
+  layer: 'all' | 'plan' | 'done';
   onOpenDay: (day: number) => void;
 }) {
   const ms = new Date(monthStart);
@@ -20,27 +22,26 @@ export function MonthView({
   const days = Array.from({ length: weeks * 7 }, (_, i) => addDays(gridStart, i));
   const today = startOfDay(Date.now());
 
-  const studied = useMemo(() => byDay(alive(data.sessions)), [data.sessions]);
-  const blocksByDay = useMemo(() => {
-    const m = new Map<string, typeof data.planBlocks>();
-    for (const b of alive(data.planBlocks)) {
-      const k = dayKey(b.start);
+  const group = <T,>(list: T[], key: (x: T) => string) => {
+    const m = new Map<string, T[]>();
+    for (const x of list) {
+      const k = key(x);
       if (!m.has(k)) m.set(k, []);
-      m.get(k)!.push(b);
+      m.get(k)!.push(x);
     }
-    for (const list of m.values()) list.sort((a, b) => a.start - b.start);
+    return m;
+  };
+  const sessionsByDay = useMemo(() => group<Session>(alive(data.sessions), (s) => dayKey(s.start)), [data.sessions]);
+  const blocksByDay = useMemo(() => {
+    const m = group<PlanBlock>(alive(data.planBlocks), (b) => dayKey(b.start));
+    for (const l of m.values()) l.sort((a, b) => a.start - b.start);
     return m;
   }, [data.planBlocks]);
-  const examsByDay = useMemo(() => {
-    const m = new Map<string, typeof data.exams>();
-    for (const e of alive(data.exams)) {
-      if (!m.has(e.date)) m.set(e.date, []);
-      m.get(e.date)!.push(e);
-    }
-    return m;
-  }, [data.exams]);
+  const examsByDay = useMemo(() => group(alive(data.exams), (e) => e.date), [data.exams]);
   const subj = useMemo(() => new Map(data.subjects.map((s) => [s.id, s])), [data.subjects]);
-  const maxStudied = Math.max(3600, ...days.map((d) => studied.get(dayKey(d)) ?? 0));
+
+  const dayTotals = days.map((d) => (sessionsByDay.get(dayKey(d)) ?? []).reduce((a, s) => a + s.durationSec, 0));
+  const maxDay = Math.max(3600, ...dayTotals);
 
   return (
     <div className="month-scroll">
@@ -50,25 +51,27 @@ export function MonthView({
             {w}
           </div>
         ))}
-        {days.map((d) => {
+        {days.map((d, i) => {
           const k = dayKey(d);
           const inMonth = new Date(d).getMonth() === ms.getMonth();
-          const blocks = blocksByDay.get(k) ?? [];
+          const sessions = layer === 'plan' ? [] : (sessionsByDay.get(k) ?? []);
+          const blocks = layer === 'done' ? [] : (blocksByDay.get(k) ?? []);
           const exams = examsByDay.get(k) ?? [];
-          const sec = studied.get(k) ?? 0;
+          const total = layer === 'plan' ? 0 : dayTotals[i];
+          const perSubj = new Map<string, number>();
+          for (const s of sessions) perSubj.set(s.subjectId, (perSubj.get(s.subjectId) ?? 0) + s.durationSec);
+          const subjRows = [...perSubj.entries()].sort((a, b) => b[1] - a[1]);
           return (
-            <button
-              key={d}
-              className={`month-cell ${inMonth ? '' : 'out'} ${d === today ? 'today' : ''} ${d < today ? 'past' : ''}`}
-              onClick={() => onOpenDay(d)}
-            >
+            <button key={d} className={`month-cell ${inMonth ? '' : 'out'} ${d === today ? 'today' : ''}`} onClick={() => onOpenDay(d)}>
               <div className="month-top">
                 <span className="num month-dn">{new Date(d).getDate()}</span>
-                {sec > 0 && <span className="num month-sec">{fmtDuration(sec, { short: true })}</span>}
+                {total > 0 && <span className="num month-sec">{fmtDuration(total, { short: true })}</span>}
               </div>
-              {sec > 0 && (
-                <span className="month-bar">
-                  <i style={{ width: `${Math.min(1, sec / maxStudied) * 100}%` }} />
+              {total > 0 && (
+                <span className="month-mix" style={{ width: `${Math.max(8, (total / maxDay) * 100)}%` }}>
+                  {subjRows.map(([id, sec]) => (
+                    <i key={id} style={{ flexGrow: sec, background: subj.get(id)?.color }} />
+                  ))}
                 </span>
               )}
               {exams.map((e) => (
@@ -76,13 +79,22 @@ export function MonthView({
                   {e.name}
                 </span>
               ))}
-              {blocks.slice(0, 3).map((b) => (
-                <span key={b.id} className={`month-block ellipsis ${b.done ? 'done' : ''}`}>
-                  <i style={{ background: subj.get(b.subjectId)?.color }} />
-                  <span className="num">{fmtTime(b.start)}</span> {subj.get(b.subjectId)?.name}
+              {subjRows.slice(0, 3).map(([id, sec]) => (
+                <span key={id} className="month-row ellipsis">
+                  <i className="sq" style={{ background: subj.get(id)?.color }} />
+                  {subj.get(id)?.name} <span className="num faint">{fmtDuration(sec, { short: true })}</span>
                 </span>
               ))}
-              {blocks.length > 3 && <span className="month-more">+{blocks.length - 3} další</span>}
+              {blocks
+                .filter((b) => !(layer === 'all' && b.done))
+                .slice(0, 3)
+                .map((b) => (
+                  <span key={b.id} className={`month-row plan ellipsis ${b.done ? 'done' : ''}`}>
+                    <i className="ring" style={{ borderColor: subj.get(b.subjectId)?.color }} />
+                    <span className="num faint">{fmtTime(b.start)}</span> {subj.get(b.subjectId)?.name}
+                    {b.done && <Check size={10} />}
+                  </span>
+                ))}
             </button>
           );
         })}

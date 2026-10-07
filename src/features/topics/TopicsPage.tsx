@@ -7,7 +7,21 @@ import { DAY, fmtDate, plural, startOfDay } from '../../lib/time';
 import { navigate } from '../../lib/router';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
 import { useTimer } from '../timer/TimerContext';
-import { INTERVALS, RATING_LABEL, RecallRating, applyStudy, findTopic, isDue, newTopic, overdueDays } from './schedule';
+import {
+  RATINGS,
+  RATING_HINT,
+  RATING_LABEL,
+  RecallRating,
+  applyStudy,
+  ctxFrom,
+  difficulty,
+  findTopic,
+  isDue,
+  newTopic,
+  overdueDays,
+  retrievability,
+  stability,
+} from './schedule';
 import './topics.css';
 
 function dueLabel(t: Topic): { text: string; cls: string } {
@@ -20,25 +34,41 @@ function dueLabel(t: Topic): { text: string; cls: string } {
   return { text: `za ${-d} ${plural(-d, 'den', 'dny', 'dní')}`, cls: '' };
 }
 
-/** Úroveň zapamatování jako řada políček (jedno políčko = jeden interval). */
-export function StageMeter({ t }: { t: Topic }) {
+/** Aktuální pravděpodobnost vybavení (FSRS) jako ukazatel. */
+export function MemoryMeter({ t }: { t: Topic }) {
+  const { data } = useStore();
+  const ctx = ctxFrom(data);
+  const r = retrievability(t, ctx);
+  if (r == null) return <span className="mem mem-new label">nové</span>;
+  const cls = r >= ctx.retention - 0.005 ? 'ok' : r >= 0.75 ? 'mid' : 'low';
+  const s = stability(t);
   return (
-    <span className="stage" title={t.stage < 0 ? 'Ještě neučeno' : `Interval ${INTERVALS[t.stage]} dní`}>
-      {INTERVALS.map((_, i) => (
-        <i key={i} className={t.mastered || i <= t.stage ? 'on' : ''} />
-      ))}
+    <span className={`mem mem-${cls}`} title={`Pravděpodobnost, že si to teď vybavíš: ${Math.round(r * 100)} %. Stabilita ${s?.toFixed(1)} dne.`}>
+      <span className="mem-bar">
+        <i style={{ width: `${Math.round(r * 100)}%` }} />
+      </span>
+      <span className="num">{Math.round(r * 100)}%</span>
     </span>
   );
 }
+
+/** Zpětná kompatibilita názvu. */
+export const StageMeter = MemoryMeter;
 
 function TopicRow({ t, onEdit }: { t: Topic; onEdit: () => void }) {
   const { upsert } = useStore();
   const timer = useTimer();
   const toast = useToast();
+  const { data } = useStore();
   const due = dueLabel(t);
+  const s = stability(t);
+  const d = difficulty(t);
   const review = (r: RecallRating) => {
-    upsert('topics', applyStudy(t, Date.now(), r));
-    toast(`Zopakováno · další opakování za ${INTERVALS[applyStudy(t, Date.now(), r).stage]} dní`);
+    const now = Date.now();
+    const next = applyStudy(t, now, r, ctxFrom(data));
+    upsert('topics', next);
+    const days = Math.max(1, Math.round(((next.nextReviewAt ?? now) - now) / DAY));
+    toast(`${RATING_LABEL[r]} · další opakování za ${days} ${plural(days, 'den', 'dny', 'dní')}`);
   };
   return (
     <div className="topic-row">
@@ -49,10 +79,12 @@ function TopicRow({ t, onEdit }: { t: Topic; onEdit: () => void }) {
         <div className="small faint topic-meta">
           <SubjectTag id={t.subjectId} />
           {t.lastStudiedAt && <span className="num">· naposled {fmtDate(t.lastStudiedAt)}</span>}
+          {s != null && <span className="num" title="Stabilita: za kolik dní klesne vybavitelnost na 90 %">· S {s < 10 ? s.toFixed(1) : Math.round(s)} d</span>}
+          {d != null && <span className="num" title="Obtížnost 1–10">· D {d.toFixed(1)}</span>}
           <span className="num">· {t.reviews}×</span>
         </div>
       </div>
-      <StageMeter t={t} />
+      <MemoryMeter t={t} />
       <span className={`chip ${due.cls}`}>{due.text}</span>
       {!t.mastered && (
         <div className="row topic-actions" style={{ gap: 4 }}>
@@ -68,9 +100,9 @@ function TopicRow({ t, onEdit }: { t: Topic; onEdit: () => void }) {
               <Play size={12} fill="currentColor" />
             </button>
           )}
-          <div className="segmented" title="Zopakováno bez časovače – jak šlo vybavení?">
-            {(['hard', 'ok', 'easy'] as RecallRating[]).map((r) => (
-              <button key={r} onClick={() => review(r)}>
+          <div className="segmented grade-seg" title="Zopakováno bez časovače – jak šlo vybavení?">
+            {RATINGS.map((r) => (
+              <button key={r} className={`g-${r}`} onClick={() => review(r)} title={RATING_HINT[r]}>
                 {RATING_LABEL[r]}
               </button>
             ))}
@@ -169,7 +201,10 @@ export function TopicsPage() {
 
   const topics = useMemo(() => alive(data.topics).filter((t) => !subjectId || t.subjectId === subjectId), [data.topics, subjectId]);
   const endToday = startOfDay(Date.now()) + DAY;
-  const due = topics.filter((t) => isDue(t, endToday)).sort((a, b) => (a.nextReviewAt ?? 0) - (b.nextReviewAt ?? 0));
+  const ctx = ctxFrom(data);
+  const due = topics
+    .filter((t) => isDue(t, endToday))
+    .sort((a, b) => (retrievability(a, ctx) ?? 1) - (retrievability(b, ctx) ?? 1));
   const upcoming = topics.filter((t) => !t.mastered && !isDue(t, endToday) && t.nextReviewAt != null).sort((a, b) => (a.nextReviewAt ?? 0) - (b.nextReviewAt ?? 0));
   const fresh = topics.filter((t) => !t.mastered && t.nextReviewAt == null);
   const mastered = topics.filter((t) => t.mastered);
@@ -178,6 +213,7 @@ export function TopicsPage() {
   const fromHistory = useMemo(() => {
     const out = new Map<string, { subjectId: string; name: string; last: number; count: number }>();
     for (const s of alive(data.sessions)) {
+      if (s.mode === 'anki') continue; // bloky z Anki mají jako „téma“ název balíčku
       const name = s.topic.trim();
       if (!name || findTopic(data.topics, s.subjectId, name)) continue;
       const key = `${s.subjectId}|${name.toLocaleLowerCase('cs')}`;
@@ -196,7 +232,7 @@ export function TopicsPage() {
       'topics',
       fromHistory.map((h) => {
         let t = newTopic(h.subjectId, h.name);
-        t = applyStudy(t, h.last, 'ok');
+        t = applyStudy(t, h.last, 'ok', ctxFrom(data));
         return { ...t, reviews: h.count };
       }),
     );
@@ -216,7 +252,10 @@ export function TopicsPage() {
       <div className="page-head">
         <div>
           <h1>Opakování</h1>
-          <p>Témata se vracejí v rostoucích intervalech: 1, 3, 7, 14, 30, 60 a 120 dní. Tak se ukládají do dlouhodobé paměti.</p>
+          <p>
+            Algoritmus <b>FSRS-6</b> (stejný jako v Anki) hlídá u každého tématu, jak pravděpodobně si ho teď vybavíš, a naplánuje
+            opakování, když klesne na <b className="num">{Math.round((data.settings.desiredRetention ?? 0.9) * 100)} %</b>.
+          </p>
         </div>
         <div className="row wrap">
           <div style={{ width: 220 }}>
@@ -232,7 +271,7 @@ export function TopicsPage() {
         <div className="banner">
           <Repeat size={16} />
           <span className="grow">
-            V historii je {fromHistory.length} {plural(fromHistory.length, 'téma', 'témata', 'témat')} bez plánu opakování.
+            V historii {plural(fromHistory.length, 'je', 'jsou', 'je')} {fromHistory.length} {plural(fromHistory.length, 'téma', 'témata', 'témat')} bez plánu opakování.
           </span>
           <button className="btn sm" onClick={importHistory}>
             Přidat do opakování

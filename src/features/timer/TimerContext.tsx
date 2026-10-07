@@ -4,7 +4,8 @@ import { uid } from '../../data/schema';
 import { chime, notify, unlockAudio } from '../../lib/alerts';
 import { fmtClock } from '../../lib/time';
 import { BUILTIN_MODES, TimerMode, allModes } from './modes';
-import { applyStudy, findTopic, newTopic, topicSnapshots } from '../topics/schedule';
+import { applyStudy, ctxFrom, findTopic, newTopic, topicSnapshots } from '../topics/schedule';
+import { matchPlanBlocks } from '../planner/match';
 
 /**
  * Časovač je řízený časovými značkami (ne odpočítáváním po sekundách),
@@ -119,7 +120,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       if (topicName) {
         const base = findTopic(d.topics, s.subjectId, topicName) ?? newTopic(s.subjectId, topicName);
         topicSnapshots.set(id, base);
-        const next = applyStudy(base, endAt, 'ok');
+        const next = applyStudy(base, endAt, 'ok', ctxFrom(d));
         upsert('topics', next);
         topicId = next.id;
       }
@@ -135,10 +136,11 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         interruptions: s.interruptions,
         note: '',
       });
-      if (s.planBlockId) {
-        const block = d.planBlocks.find((b) => b.id === s.planBlockId);
-        if (block) upsertMany('planBlocks', [{ ...block, done: true }]);
-      }
+      // Odškrtni blok, ze kterého byl časovač spuštěn, i všechny naplánované bloky, se kterými se sezení časově kryje.
+      const startAt = s.workStartedAt ?? endAt - elapsed;
+      const linked = s.planBlockId ? d.planBlocks.filter((b) => b.id === s.planBlockId && !b.done) : [];
+      const matched = matchPlanBlocks(d.planBlocks, s.subjectId, startAt, endAt).filter((b) => b.id !== s.planBlockId);
+      if (linked.length || matched.length) upsertMany('planBlocks', [...linked, ...matched].map((b) => ({ ...b, done: true })));
       if (st.askFocusRating || st.askRecall || topicId) setPendingRating(id);
       return id;
     },

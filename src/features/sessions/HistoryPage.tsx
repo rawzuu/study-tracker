@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { BookOpen, FileSpreadsheet, Pencil, Plus, Trash2 } from 'lucide-react';
 import { sessionsToCsv } from '../../lib/csv';
 import { downloadFile } from '../planner/ics';
-import { applyStudy, findTopic, newTopic } from '../topics/schedule';
+import { applyStudy, ctxFrom, findTopic, newTopic } from '../topics/schedule';
+import { matchPlanBlocks } from '../planner/match';
 import { useStore } from '../../data/store';
 import { Session, alive, uid } from '../../data/schema';
 import { Empty, Field, Modal } from '../../components/ui';
@@ -12,12 +13,12 @@ import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
 import { modeName } from '../timer/modes';
 import { FOCUS_LABELS } from '../timer/FocusRating';
 
-export function SessionModal({ session, onClose }: { session?: Session; onClose: () => void }) {
-  const { upsert, remove } = useStore();
+export function SessionModal({ session, initialStart, onClose }: { session?: Session; initialStart?: number; onClose: () => void }) {
+  const { upsert, upsertMany, remove } = useStore();
   const defEnd = session?.end ?? Date.now();
   const [subjectId, setSubjectId] = useState(session?.subjectId ?? '');
   const [topic, setTopic] = useState(session?.topic ?? '');
-  const [start, setStart] = useState(toLocalInput(session?.start ?? defEnd - 50 * 60_000));
+  const [start, setStart] = useState(toLocalInput(session?.start ?? initialStart ?? defEnd - 50 * 60_000));
   const [minutes, setMinutes] = useState(session ? Math.round(session.durationSec / 60) : 50);
   const [focus, setFocus] = useState<number>(session?.focus ?? 0);
   const [note, setNote] = useState(session?.note ?? '');
@@ -31,7 +32,7 @@ export function SessionModal({ session, onClose }: { session?: Session; onClose:
     const tName = topic.trim();
     if (!session && tName) {
       const base = findTopic(data.topics, subjectId, tName) ?? newTopic(subjectId, tName);
-      const next = applyStudy(base, s + minutes * 60_000, 'ok');
+      const next = applyStudy(base, s + minutes * 60_000, 'ok', ctxFrom(data));
       upsert('topics', next);
       topicId = next.id;
     }
@@ -49,6 +50,11 @@ export function SessionModal({ session, onClose }: { session?: Session; onClose:
       note: note.trim(),
       topicId,
     } as Session);
+    // Odpovídající naplánované bloky se automaticky odškrtnou.
+    if (!session) {
+      const matched = matchPlanBlocks(data.planBlocks, subjectId, s, end);
+      if (matched.length) upsertMany('planBlocks', matched.map((b) => ({ ...b, done: true })));
+    }
     onClose();
   };
 

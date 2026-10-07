@@ -1,0 +1,48 @@
+.anki-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.anki-big {
+  font-size: 34px;
+  font-weight: 450;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+/* Barvy jako v Anki: nové modře, učené červeně, k opakování zeleně */
+.anki-counts {
+  display: inline-flex;
+  gap: 10px;
+  font-size: 14px;
+}
+.anki-counts.small {
+  font-size: 12px;
+  gap: 8px;
+}
+.anki-counts span {
+  min-width: 22px;
+  text-align: right;
+}
+.c-new {
+  color: #5eb1ef;
+}
+.c-learn {
+  color: var(--danger);
+}
+.c-rev {
+  color: var(--success);
+}
+.anki-deck {
+  padding: 7px 0;
+  font-size: 13px;
+}
+.anki-status.s-ok {
+  color: var(--success);
+}
+.anki-status.s-offline,
+.anki-status.s-error,
+.anki-status.s-denied {
+  color: var(--text-3);
+}

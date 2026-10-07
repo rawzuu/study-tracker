@@ -15,6 +15,7 @@ import { isDue, overdueDays } from '../topics/schedule';
 import { StageMeter } from '../topics/TopicsPage';
 import { lastWeekKey, reflectionDue } from '../reflection/ReflectionPage';
 import { modeName } from '../timer/modes';
+import { AnkiPanel } from '../anki/AnkiPanel';
 import './dashboard.css';
 
 function greeting() {
@@ -109,6 +110,8 @@ export function Dashboard() {
   const [reportDismissed, dismissReport] = useDismiss(`st.dismiss.report.${prevMonth.getFullYear()}-${prevMonth.getMonth()}`);
   const showReport = new Date(now).getDate() <= 7 && prevMonthCount > 0 && !reportDismissed;
   const thisWeekReflection = data.reflections.find((r) => !r.deletedAt && r.weekStart === lastWeekKey() && r.focusNext);
+
+  const showAnki = data.settings.anki.enabled || data.anki.some((a) => a.id === 'snapshot' && !a.deletedAt);
 
   const startTopic = (subjectId: string, topic: string, planBlockId?: string) => {
     timer.configure({ subjectId, topic, planBlockId });
@@ -243,7 +246,7 @@ export function Dashboard() {
         <div className="card c-4 xl-3">
           <div className="card-head">
             <h2>Dnešní plán</h2>
-            <a href="#/planovac">Plánovač</a>
+            <a href="#/planovac">Kalendář</a>
           </div>
           {todayBlocks.length === 0 ? (
             <Empty icon={<CalendarDays size={22} strokeWidth={1.5} />} title="Na dnešek nic">
@@ -347,7 +350,7 @@ export function Dashboard() {
           )}
         </div>
 
-        <div className="card c-4 xl-3">
+        <div className={`card c-4 ${showAnki ? 'xl-4' : 'xl-3'}`}>
           <div className="card-head">
             <h2>Tento týden</h2>
             <span className="sub num">{fmtDuration(weekSec, { short: true })}</span>
@@ -355,14 +358,14 @@ export function Dashboard() {
           <Chart option={charts.week} height={190} />
         </div>
 
-        <div className="card c-4 xl-3">
+        <div className={`card c-4 ${showAnki ? 'xl-4' : 'xl-3'}`}>
           <div className="card-head">
             <h2>Zkoušky</h2>
             <a href="#/planovac">Přidat</a>
           </div>
           {exams.length === 0 ? (
             <Empty icon={<GraduationCap size={22} strokeWidth={1.5} />} title="Žádné zkoušky">
-              <span className="small faint">V plánovači ti naplánuju opakování.</span>
+              <span className="small faint">V kalendáři ti naplánuju opakování.</span>
             </Empty>
           ) : (
             <div className="list">
@@ -389,7 +392,9 @@ export function Dashboard() {
           )}
         </div>
 
-        <div className="card c-12 xl-6">
+        {showAnki && <AnkiPanel className="c-4 xl-4" />}
+
+        <div className={`card ${showAnki ? 'c-8 xl-12' : 'c-12 xl-6'}`}>
           <div className="card-head">
             <h2>Posledních 26 týdnů</h2>
             <a href="#/statistiky">Statistiky</a>

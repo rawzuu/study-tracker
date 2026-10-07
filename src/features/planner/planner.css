@@ -43,11 +43,28 @@
   letter-spacing: -0.03em;
 }
 .week-day-head.today .wd {
-  color: var(--accent);
+  color: var(--text);
 }
 .week-day-head.today .dn {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--text);
+  color: var(--bg);
+}
+.day-sum {
+  font-size: 10.5px;
+  color: var(--text-2);
+  min-height: 14px;
+}
+.day-mix {
+  display: flex;
+  width: 70%;
+  height: 3px;
+  border-radius: 2px;
+  overflow: hidden;
+  gap: 1px;
+}
+.day-mix i {
+  display: block;
+  height: 100%;
 }
 .exam-pill {
   width: 100%;
@@ -97,7 +114,7 @@
   cursor: cell;
 }
 .day-col.today {
-  background: color-mix(in srgb, var(--accent) 3%, transparent);
+  background: color-mix(in srgb, var(--text) 2.5%, transparent);
 }
 .hour-line {
   position: absolute;
@@ -111,8 +128,8 @@
   left: -1px;
   right: 0;
   height: 1.5px;
-  background: var(--accent);
-  z-index: 3;
+  background: var(--danger);
+  z-index: 4;
   pointer-events: none;
 }
 .now-line::before {
@@ -123,57 +140,175 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--danger);
 }
 
-.pblock {
+/* ---------- Položky kalendáře ---------- */
+.cal-item {
   position: absolute;
   z-index: 2;
-  padding: 4px 7px;
+  padding: 3px 7px;
   border-radius: 5px;
-  background: color-mix(in srgb, var(--c) 16%, var(--panel));
-  border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
-  border-left: 2px solid var(--c);
-  color: var(--text);
   font-size: 11.5px;
   line-height: 1.3;
   overflow: hidden;
-  cursor: grab;
   display: flex;
   flex-direction: column;
-  touch-action: none;
-  transition: filter 0.12s;
+  min-width: 0;
 }
-.pblock:hover {
-  filter: brightness(1.15);
-}
-.pblock b {
+.cal-item b {
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
-.pblock span {
-  color: var(--text-2);
+.cal-item span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pblock .t {
+.cal-item .t {
   font-family: var(--mono);
   font-size: 10px;
+}
+
+/* Plán: obrys v barvě předmětu */
+.cal-plan {
+  background: color-mix(in srgb, var(--c) 7%, transparent);
+  border: 1.5px dashed color-mix(in srgb, var(--c) 75%, transparent);
+  color: var(--text);
+  cursor: grab;
+  touch-action: none;
+}
+.cal-plan b {
+  color: var(--c);
+}
+.cal-plan span {
+  color: var(--text-2);
+}
+.cal-plan .t {
   color: var(--text-3);
 }
-.pblock.done {
-  opacity: 0.45;
+.cal-plan:hover {
+  background: color-mix(in srgb, var(--c) 14%, transparent);
 }
-.pblock.done b {
-  text-decoration: line-through;
+.cal-plan.done {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--c) 35%, transparent);
+  opacity: 0.6;
 }
-.pblock.dragging {
+.cal-plan.dragging {
   z-index: 10;
   cursor: grabbing;
   box-shadow: var(--shadow-pop);
+  background: var(--panel-2);
+}
+
+/* Odučeno: plná barva předmětu */
+.cal-done {
+  z-index: 3;
+  background: var(--c);
+  color: #0b0b0b;
+  border: 1px solid color-mix(in srgb, var(--c) 70%, #000);
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+.cal-done span {
+  color: rgba(0, 0, 0, 0.66);
+}
+.cal-done .t {
+  color: rgba(0, 0, 0, 0.55);
+}
+.cal-done:hover {
+  filter: brightness(1.08);
+}
+.cal-done.live {
+  background: repeating-linear-gradient(-45deg, var(--c), var(--c) 6px, color-mix(in srgb, var(--c) 82%, #fff) 6px, color-mix(in srgb, var(--c) 82%, #fff) 12px);
+  background-size: 17px 17px;
+  animation: live-stripes 1.2s linear infinite;
+  cursor: default;
+}
+@keyframes live-stripes {
+  to {
+    background-position: 17px 0;
+  }
+}
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 2px 2px;
+  margin-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.legend-key,
+.legend-subj {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+}
+.legend-subj {
+  color: var(--text);
+}
+.legend-subj i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.legend-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--line-strong);
+}
+.k-done,
+.k-plan {
+  display: inline-block;
+  width: 16px;
+  height: 10px;
+  border-radius: 2px;
+}
+.k-done {
+  background: var(--text-2);
+}
+.k-plan {
+  border: 1.5px dashed var(--text-2);
+}
+.k-done.big,
+.k-plan.big {
+  width: 34px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.choose {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.choose-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.choose-opt:hover {
+  background: var(--panel-2);
+  border-color: var(--text-3);
 }
 
 .exam-row {
@@ -238,8 +373,8 @@
   font-size: 13px;
 }
 .month-cell.today .month-dn {
-  color: var(--accent-ink);
-  background: var(--accent);
+  color: var(--bg);
+  background: var(--text);
   border-radius: 4px;
   padding: 0 5px;
 }
@@ -247,37 +382,44 @@
   font-size: 10.5px;
   color: var(--text-3);
 }
-.month-bar {
-  display: block;
-  height: 2px;
-  background: var(--panel-3);
-  border-radius: 1px;
+.month-mix {
+  display: flex;
+  height: 4px;
+  gap: 1px;
+  border-radius: 2px;
   overflow: hidden;
 }
-.month-bar i {
+.month-mix i {
   display: block;
   height: 100%;
-  background: var(--accent);
 }
-.month-block {
+.month-row {
   display: flex;
   align-items: center;
   gap: 5px;
   font-size: 11px;
   color: var(--text-2);
 }
-.month-block i {
-  width: 6px;
-  height: 6px;
+.month-row .sq {
+  width: 7px;
+  height: 7px;
   border-radius: 1.5px;
   flex-shrink: 0;
 }
-.month-block .num {
+.month-row .ring {
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+  border: 1.5px dashed;
+  flex-shrink: 0;
+}
+.month-row .num {
   font-size: 10.5px;
+}
+.month-row.plan {
   color: var(--text-3);
 }
-.month-block.done {
-  text-decoration: line-through;
+.month-row.done {
   opacity: 0.6;
 }
 .month-exam {

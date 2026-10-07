@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { AlertTriangle, CalendarClock, CheckCircle2, CloudUpload, Copy, Download, FileSpreadsheet, Github, Info, Moon, Monitor, Plus, RefreshCw, Sun, Trash2, Upload, Volume2 } from 'lucide-react';
 import { sessionsToCsv } from '../../lib/csv';
+import { AnkiSettings } from '../anki/AnkiSettings';
 import { FEED_FILE, buildFeed, feedHttpsUrl, feedWebcalUrl, publishFeed, readFeedStatus } from '../planner/calendarFeed';
 import { createGist } from '../../data/github';
 import { useStore } from '../../data/store';
@@ -163,6 +164,8 @@ export function SettingsPage() {
         </Row>
       </div>
 
+      <ReviewSection />
+      <AnkiSettings />
       <CalendarFeedSection />
       <PresetsSection />
       <BackupSection />
@@ -646,6 +649,44 @@ function CalendarFeedSection() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Opakování – FSRS
+// ============================================================
+function ReviewSection() {
+  const { data, setSettings } = useStore();
+  const s = data.settings;
+  return (
+    <div className="card">
+      <div className="card-head">
+        <h2>Opakování (FSRS-6)</h2>
+        <span className="sub">stejný algoritmus jako Anki</span>
+      </div>
+      <Row label="Cílová spolehlivost" desc="Opakování se naplánuje, když pravděpodobnost vybavení klesne na tuto hodnotu. Vyšší = častější opakování.">
+        <select className="input" style={{ width: 120 }} value={s.desiredRetention} onChange={(e) => setSettings({ desiredRetention: Number(e.target.value) })}>
+          {[0.85, 0.88, 0.9, 0.92, 0.95, 0.97].map((r) => (
+            <option key={r} value={r}>
+              {Math.round(r * 100)} %
+            </option>
+          ))}
+        </select>
+      </Row>
+      <Row label="Maximální interval" desc="Nejdelší možná pauza mezi opakováními.">
+        <select className="input" style={{ width: 120 }} value={s.maxIntervalDays} onChange={(e) => setSettings({ maxIntervalDays: Number(e.target.value) })}>
+          {[30, 60, 90, 180, 365, 730].map((d) => (
+            <option key={d} value={d}>
+              {d} dní
+            </option>
+          ))}
+        </select>
+      </Row>
+      <p className="small faint" style={{ marginTop: 10 }}>
+        90 % je doporučený kompromis mezi zapamatováním a počtem opakování. Před zkouškou se vyplatí zvýšit na 95 %. Opakování se navíc
+        nikdy nenaplánuje až po zkoušce daného předmětu.
+      </p>
     </div>
   );
 }

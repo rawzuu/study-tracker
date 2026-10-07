@@ -77,7 +77,7 @@ export function Onboarding() {
                 <b>Statistiky a měsíční report</b> – kdy a jak se učíš nejlépe
               </li>
               <li>
-                <b>Plánovač</b> – s exportem do Apple Kalendáře
+                <b>Kalendář</b> – plán i odučené bloky, export do Apple Kalendáře
               </li>
             </ul>
             <div className="row" style={{ justifyContent: 'flex-end' }}>

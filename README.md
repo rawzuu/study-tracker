@@ -9,16 +9,17 @@ Osobní aplikace na sledování času učení: časovače podložené výzkumem,
 - **Časovače:** Pomodoro (25/5), Dlouhé Pomodoro (50/10), 52/17, Ultradiánní blok (90/20), Flowtime, stopky a vlastní režimy. U každého je uvedeno, z čeho vychází a jak silné jsou důkazy.
 - **Záznam sezení:** předmět, téma, čistý čas, hodnocení soustředění (1–5), počet vyrušení a ruční zápis.
 - **Statistiky:** heatmapa roku, trend s 7denním průměrem, předměty v čase, rozložení, den × hodina, soustředění podle denní doby a automatické postřehy.
-- **Plánovač:** týdenní kalendář s přetahováním, opakované bloky, týdenní cíle, plán vs. realita.
+- **Kalendář (v2.1):** odučené bloky z časovače plnou barvou předmětu, plán jako obrys, živý blok běžícího časovače, automatické odškrtnutí splněného plánu, týden/měsíc, plán vs. realita.
 - **Zkoušky:** automaticky naplánované rozložené opakování (spacing effect).
 - **Export `.ics`:** pro Apple Kalendář, Google i Outlook.
-- **Opakování témat (v2):** každé téma se vrací po 1, 3, 7, 14, 30, 60 a 120 dnech; těžké vybavení interval zkrátí.
+- **Opakování témat – FSRS-6 (v2.1):** stejný algoritmus jako Anki (knihovna `ts-fsrs`). Každé téma má stabilitu, obtížnost a aktuální pravděpodobnost vybavení; hodnocení Znovu/Těžko/Dobře/Snadno; nastavitelná cílová spolehlivost; opakování se nikdy nenaplánuje až po zkoušce.
+- **Anki (v2.1):** přes doplněk AnkiConnect panel „Anki dnes“ (nové / učené / k opakování po balíčcích) a čas z Anki automaticky ve statistikách a kalendáři.
 - **Vybavení po bloku (v2):** po bloku krátce sepíšeš, co si pamatuješ (retrieval practice).
 - **Týdenní reflexe (v2):** souhrn týdne, 3 otázky a jedna věc, kterou změníš – zobrazí se na přehledu.
 - **Měsíční report (v2):** postřehy, nejsilnější dny a hodiny, chronotyp, srovnání předmětů s minulým měsícem, tisk do PDF.
 - **Šum na soustředění (v2):** hnědý, růžový nebo bílý šum generovaný v prohlížeči.
 - **Odebíraný kalendář (v2):** plán se publikuje do tajného gistu a Apple Kalendář se aktualizuje sám.
-- **Měsíční pohled v plánovači a export CSV (v2).**
+- **Export CSV (v2).**
 - **Průvodce pro nové uživatele (v2)** – kamarádi si nastaví vlastní zálohu na svůj GitHub.
 - **Tmavý (výchozí) i světlý režim.** Funguje na mobilu a jde přidat na plochu (PWA, offline).
 
@@ -35,6 +36,12 @@ Osobní aplikace na sledování času učení: časovače podložené výzkumem,
 - Data mají `schemaVersion`. Při změně struktury se použije migrace v [`src/data/migrations.ts`](src/data/migrations.ts) a před migrací se lokálně uloží záloha.
 - Nové funkce data jen **přidávají** (nová pole a kolekce), takže starší verze aplikace je umí načíst a nic z nich nesmažou.
 
+## Anki
+
+1. V desktopové Anki: *Nástroje → Doplňky → Získat doplňky* → kód `2055492159` (AnkiConnect), restart Anki.
+2. V aplikaci *Nastavení → Anki → Propojit s Anki*. Anki se zeptá na povolení stránky → Yes.
+3. Funguje v prohlížeči na stejném počítači, kde běží Anki (Chromium/Firefox). Na mobilu se ukazuje poslední stav z počítače.
+
 ## Návrat na starší verzi
 
 Každá verze je uložená jako [release](https://github.com/rawzuu/study-tracker/releases).
@@ -43,7 +50,7 @@ Každá verze je uložená jako [release](https://github.com/rawzuu/study-tracke
 2. Do pole *verze* napiš tag, např. `v1.0.0`, a spusť.
 3. Za ~1 minutu běží na stránce zvolená verze. Zpět na nejnovější: spusť znovu s prázdným polem.
 
-Data zůstávají v soukromém repu nedotčená (záloha stavu před v2: tag `zaloha-pred-v2` v `study-tracker-data`).
+Data zůstávají v soukromém repu nedotčená (zálohy stavu: tagy `zaloha-pred-v2` a `zaloha-pred-v2.1` v `study-tracker-data`).
 
 ### Připojení synchronizace (jednou na zařízení)
 

@@ -120,6 +120,7 @@ export function allModes(presets: TimerPreset[]): TimerMode[] {
 export function modeName(id: string, presets: TimerPreset[]): string {
   if (id === 'manual') return 'Ruční zápis';
   if (id === 'plan') return 'Z plánu';
+  if (id === 'anki') return 'Anki';
   return allModes(presets).find((m) => m.id === id)?.name ?? 'Neznámý režim';
 }
 

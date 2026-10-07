@@ -51,6 +51,34 @@ export interface Topic extends Entity {
   reviews: number;
   mastered: boolean; // zvládnuto – už se neopakuje
   note: string;
+  fsrs?: TopicFsrs; // v2.1+: stav algoritmu FSRS-6 (stage/nextReviewAt se dál vyplňují kvůli starším verzím)
+}
+
+/** Stav tématu podle FSRS (paměťový model Stabilita–Obtížnost–Vybavitelnost). */
+export interface TopicFsrs {
+  s: number; // stabilita ve dnech
+  d: number; // obtížnost 1–10
+  state: number; // 0 nové, 1 učení, 2 opakování, 3 znovu učení
+  reps: number;
+  lapses: number; // kolikrát zapomenuto
+  scheduledDays: number;
+  lastReview?: number;
+  due: number;
+}
+
+/** Poslední stav z Anki (přes AnkiConnect). (v2.1+) */
+export interface AnkiSnapshot extends Entity {
+  at: number;
+  decks: { name: string; newCount: number; learnCount: number; reviewCount: number; total: number }[];
+  reviewedToday: number;
+  msToday: number;
+}
+
+export interface AnkiSettings {
+  enabled: boolean;
+  countTime: boolean; // započítávat čas z Anki jako sezení
+  deckSubjects: Record<string, string>; // balíček → id předmětu
+  importDays: number;
 }
 
 /** Týdenní reflexe. (v1.1+) */
@@ -117,6 +145,10 @@ export interface Settings {
   noiseVolume: number;
   weeklyReflection: boolean;
   calendarFeed: CalendarFeed | null;
+  // v2.1+
+  desiredRetention: number; // cílová pravděpodobnost vybavení (FSRS)
+  maxIntervalDays: number;
+  anki: AnkiSettings;
 }
 
 export interface AppData {
@@ -128,11 +160,12 @@ export interface AppData {
   presets: TimerPreset[];
   topics: Topic[];
   reflections: Reflection[];
+  anki: AnkiSnapshot[];
   settings: Settings;
 }
 
 /** Kolekce entit, které se slučují po jednotlivých záznamech. */
-export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets', 'topics', 'reflections'] as const;
+export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets', 'topics', 'reflections', 'anki'] as const;
 export type CollectionKey = (typeof COLLECTIONS)[number];
 
 export const SUBJECT_COLORS = [
@@ -167,6 +200,9 @@ export function defaultSettings(): Settings {
     noiseVolume: 0.35,
     weeklyReflection: true,
     calendarFeed: null,
+    desiredRetention: 0.9,
+    maxIntervalDays: 365,
+    anki: { enabled: false, countTime: true, deckSubjects: {}, importDays: 60 },
   };
 }
 
@@ -180,6 +216,7 @@ export function emptyData(): AppData {
     presets: [],
     topics: [],
     reflections: [],
+    anki: [],
     settings: defaultSettings(),
   };
 }

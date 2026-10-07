@@ -75,7 +75,7 @@ function SubjectModal({ subject, onClose }: { subject?: Subject; onClose: () => 
             <input className="input" type="color" value={color} onChange={(e) => setColor(e.target.value)} title="Vlastní barva" />
           </div>
         </Field>
-        <Field label="Týdenní cíl (hodiny)" hint="0 = bez cíle. Zobrazí se na přehledu a v plánovači.">
+        <Field label="Týdenní cíl (hodiny)" hint="0 = bez cíle. Zobrazí se na přehledu a v kalendáři.">
           <input className="input" type="number" min={0} step={0.5} value={goalH} onChange={(e) => setGoalH(Math.max(0, Number(e.target.value)))} />
         </Field>
         {subject && sessions > 0 && (

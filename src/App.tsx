@@ -34,6 +34,7 @@ import { HistoryPage } from './features/sessions/HistoryPage';
 import { SubjectsPage } from './features/subjects/SubjectsPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { Onboarding } from './features/onboarding/Onboarding';
+import { useAnkiSync } from './features/anki/useAnkiSync';
 
 /**
  * Registr stránek. Novou funkci přidáš tak, že vytvoříš složku ve `features/`
@@ -51,7 +52,7 @@ interface PageDef {
 const PAGES: PageDef[] = [
   { id: 'prehled', label: 'Přehled', icon: LayoutDashboard, component: Dashboard, group: 'Učení', mobile: true },
   { id: 'casovac', label: 'Časovač', icon: Timer, component: TimerPage, group: 'Učení', mobile: true },
-  { id: 'planovac', label: 'Plánovač', icon: CalendarDays, component: PlannerPage, group: 'Učení', mobile: true },
+  { id: 'planovac', label: 'Kalendář', icon: CalendarDays, component: PlannerPage, group: 'Učení', mobile: true },
   { id: 'opakovani', label: 'Opakování', icon: Repeat, component: TopicsPage, group: 'Učení' },
   { id: 'statistiky', label: 'Statistiky', icon: BarChart3, component: StatsPage, group: 'Přehledy', mobile: true },
   { id: 'report', label: 'Měsíční report', icon: FileText, component: ReportPage, group: 'Přehledy' },
@@ -173,9 +174,10 @@ export function App() {
   const { data } = useStore();
   const theme = useApplyTheme(data.settings.theme);
   const route = useRoute();
-  const page = PAGES.find((p) => p.id === route) ?? PAGES[0];
+  const page = PAGES.find((p) => p.id === (route === 'kalendar' ? 'planovac' : route)) ?? PAGES[0];
   const Page = page.component;
   useCalendarFeedSync(data);
+  useAnkiSync();
   // O průvodci se rozhoduje jen jednou při startu – jinak by zmizel hned po přidání prvního předmětu.
   const [showOnboarding] = useState(() => alive(data.subjects).length === 0 && alive(data.sessions).length === 0);
 
