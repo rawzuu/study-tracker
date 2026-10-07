@@ -101,7 +101,10 @@ export function periodStats(all: Session[], blocks: PlanBlock[], from: number, t
         ? 'Noční sova 🦉'
         : 'Denní typ ☀️';
 
-  const deep = list.filter((s) => s.durationSec >= 45 * 60).reduce((a, s) => a + s.durationSec, 0);
+  // Bloky z Anki jsou krátké opakování kartiček – do průměrné délky bloku a hluboké práce je nepočítáme.
+  const focusList = list.filter((s) => s.mode !== 'anki');
+  const focusTotal = totalSec(focusList);
+  const deep = focusList.filter((s) => s.durationSec >= 45 * 60).reduce((a, s) => a + s.durationSec, 0);
   const interruptions = list.reduce((a, s) => a + s.interruptions, 0);
 
   const pastBlocks = blocks.filter((b) => !b.deletedAt && b.start >= from && b.start < Math.min(to, now));
@@ -116,12 +119,12 @@ export function periodStats(all: Session[], blocks: PlanBlock[], from: number, t
     activeDays,
     consistency: activeDays / days,
     avgPerActiveDay: activeDays ? total / activeDays : 0,
-    avgSession: list.length ? total / list.length : 0,
-    longestSession: list.reduce<Session | null>((m, s) => (!m || s.durationSec > m.durationSec ? s : m), null),
+    avgSession: focusList.length ? focusTotal / focusList.length : 0,
+    longestSession: focusList.reduce<Session | null>((m, s) => (!m || s.durationSec > m.durationSec ? s : m), null),
     bestDay,
     longestStreak,
     focus: avgFocus(list),
-    deepShare: total ? deep / total : 0,
+    deepShare: focusTotal ? deep / focusTotal : 0,
     interruptionsPerHour: total ? interruptions / (total / 3600) : 0,
     weekdayAvg,
     hourMinutes,

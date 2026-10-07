@@ -72,7 +72,7 @@ export interface AnkiFetch {
 const topLevel = (name: string) => name.split('::')[0];
 
 /** Stáhne počty k opakování a historii opakování od `sinceMs`. */
-export async function fetchAnki(sinceMs: number): Promise<AnkiFetch> {
+export async function fetchAnki(sinceMs: number, opts: { reviews?: boolean; knownReviewedToday?: number } = {}): Promise<AnkiFetch & { reviewsFetched: boolean }> {
   await requestPermission();
   const names = await invoke<string[]>('deckNames');
   const tops = [...new Set(names.map(topLevel))];
@@ -83,6 +83,11 @@ export async function fetchAnki(sinceMs: number): Promise<AnkiFetch> {
     .sort((a, b) => b.reviewCount + b.learnCount + b.newCount - (a.reviewCount + a.learnCount + a.newCount));
   const reviewedToday = await invoke<number>('getNumCardsReviewedToday');
 
+  // Úspora: když od minula nepřibylo žádné opakování, historii znovu nestahujeme.
+  if (opts.reviews === false || (opts.knownReviewedToday != null && opts.knownReviewedToday === reviewedToday)) {
+    return { decks, reviewedToday, reviews: [], reviewsFetched: false };
+  }
+
   // cardReviews vrací jen karty přímo v daném balíčku (ne v podbalíčcích) → ptáme se na všechny.
   const reviews: AnkiReview[] = [];
   for (const name of names) {
@@ -90,7 +95,7 @@ export async function fetchAnki(sinceMs: number): Promise<AnkiFetch> {
     for (const r of rows) reviews.push({ deck: topLevel(name), time: r[0], durationMs: r[7] });
   }
   reviews.sort((a, b) => a.time - b.time);
-  return { decks, reviewedToday, reviews };
+  return { decks, reviewedToday, reviews, reviewsFetched: true };
 }
 
 /** Seskupí opakování do bloků (pauza > 10 min = nový blok) zvlášť pro každý balíček. */

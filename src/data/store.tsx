@@ -166,7 +166,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const onOnline = () => void syncNow();
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('online', onOnline);
-    const interval = window.setInterval(() => void syncNow(), 5 * 60 * 1000);
+    // Pravidelná kontrola jen když je stránka vidět – na pozadí zbytečně nežere baterku ani data.
+    const interval = window.setInterval(() => document.visibilityState === 'visible' && void syncNow(), 5 * 60 * 1000);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('online', onOnline);

@@ -46,3 +46,19 @@
 .anki-status.s-denied {
   color: var(--text-3);
 }
+.deck-map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+}
+.deck-map select.unmapped {
+  color: var(--text-3);
+}
+@media (max-width: 520px) {
+  .deck-map {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

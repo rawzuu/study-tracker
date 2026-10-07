@@ -42,7 +42,8 @@ export function StatsPage() {
   const prevTotal = totalSec(prev);
   const days = Math.max(1, Math.round((end - from) / 86_400_000));
   const activeDays = new Set(filtered.map((s) => dayKey(s.start))).size;
-  const avgLen = filtered.length ? total / filtered.length : 0;
+  const blocks = filtered.filter((s) => s.mode !== 'anki'); // krátké bloky z Anki průměr nezkreslují
+  const avgLen = blocks.length ? totalSec(blocks) / blocks.length : 0;
   const focus = avgFocus(filtered);
   const peak = bestWindow(filtered);
   const subjTotals = [...bySubject(filtered).entries()].sort((a, b) => b[1] - a[1]);
@@ -155,7 +156,7 @@ export function StatsPage() {
             <div className="cell">
               <span className="label">ø blok</span>
               <span className="value">{fmtDuration(avgLen, { short: true })}</span>
-              <span className="foot">{filtered.length} sezení</span>
+              <span className="foot">{blocks.length} bloků{filtered.length > blocks.length ? ` + ${filtered.length - blocks.length}× Anki` : ''}</span>
             </div>
             <div className="cell">
               <span className="label">soustředění</span>

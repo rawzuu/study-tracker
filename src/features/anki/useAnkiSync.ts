@@ -42,6 +42,9 @@ export function syncAnkiNow(fullHistory = false) {
 
 type Store = ReturnType<typeof useStore>;
 
+/** Poslední známý počet dnešních opakování – když se nezmění, historie se nestahuje znovu. */
+let lastSeen: { day: number; reviewedToday: number } | null = null;
+
 async function run(store: Store, data: AppData, fullHistory: boolean) {
   const cfg = data.settings.anki;
   const hasAnkiSessions = data.sessions.some((s) => s.mode === 'anki' && !s.deletedAt);
@@ -50,18 +53,20 @@ async function run(store: Store, data: AppData, fullHistory: boolean) {
 
   setStatus({ state: 'syncing' });
   try {
-    const res = await fetchAnki(since);
+    const day = startOfDay(Date.now());
+    const known = !fullHistory && lastSeen?.day === day ? lastSeen.reviewedToday : undefined;
+    const res = await fetchAnki(since, { knownReviewedToday: known });
 
     // Snapshot – jen když se změnila čísla (aby se zbytečně necommitovalo na GitHub)
     const today = startOfDay(Date.now());
-    const msToday = res.reviews.filter((r) => r.time >= today).reduce((a, r) => a + r.durationMs, 0);
     const prev = data.anki.find((a) => a.id === 'snapshot');
+    const msToday = res.reviewsFetched ? res.reviews.filter((r) => r.time >= today).reduce((a, r) => a + r.durationMs, 0) : (prev?.msToday ?? 0);
     const sig = (x: { decks: unknown; reviewedToday: number; msToday: number }) => JSON.stringify([x.decks, x.reviewedToday, Math.round(x.msToday / 60000)]);
     if (!prev || sig(prev) !== sig({ decks: res.decks, reviewedToday: res.reviewedToday, msToday })) {
       store.upsert('anki', { id: 'snapshot', at: Date.now(), decks: res.decks, reviewedToday: res.reviewedToday, msToday });
     }
 
-    if (cfg.countTime) {
+    if (cfg.countTime && res.reviewsFetched) {
       // Předmět „Anki“ pro balíčky bez přiřazení
       const unmapped = res.reviews.some((r) => !cfg.deckSubjects[r.deck]);
       if (unmapped && !data.subjects.some((s) => s.id === ANKI_SUBJECT_ID && !s.deletedAt)) {
@@ -92,6 +97,7 @@ async function run(store: Store, data: AppData, fullHistory: boolean) {
       // Bloky, které po přepočtu už neexistují (v daném okně), smažeme
       for (const e of existing) if (!e.deletedAt && !wanted.has(e.id)) store.remove('sessions', e.id);
     }
+    lastSeen = { day, reviewedToday: res.reviewedToday };
     setStatus({ state: 'ok', at: Date.now() });
   } catch (e) {
     const kind = e instanceof AnkiError ? e.kind : 'error';

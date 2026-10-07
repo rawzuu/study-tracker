@@ -1,17 +1,58 @@
-import { AlertTriangle, CheckCircle2, Info, Layers, Plug, RefreshCw } from 'lucide-react';
+import { useRef } from 'react';
+import { AlertTriangle, CheckCircle2, Info, Layers, Plug, Plus, RefreshCw } from 'lucide-react';
 import { useStore } from '../../data/store';
-import { alive } from '../../data/schema';
+import { SUBJECT_COLORS, alive, uid } from '../../data/schema';
 import { Switch } from '../../components/ui';
-import { fmtTime } from '../../lib/time';
+import { fmtTime, plural } from '../../lib/time';
 import { ANKI_SUBJECT_ID, syncAnkiNow, useAnkiStatus } from './useAnkiSync';
 
+const NEW = '__new__';
+
+/** „algoritmizace“ → „Algoritmizace“ */
+const prettyName = (deck: string) => deck.charAt(0).toLocaleUpperCase('cs') + deck.slice(1);
+/** Porovnání názvů bez ohledu na velikost písmen a diakritiku. */
+const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('cs').trim();
+
 export function AnkiSettings() {
-  const { data, setSettings } = useStore();
+  const { data, setSettings, upsert } = useStore();
   const cfg = data.settings.anki;
   const status = useAnkiStatus();
   const snap = data.anki.find((a) => a.id === 'snapshot' && !a.deletedAt);
   const subjects = alive(data.subjects).filter((s) => !s.archived && s.id !== ANKI_SUBJECT_ID);
   const set = (patch: Partial<typeof cfg>) => setSettings({ anki: { ...cfg, ...patch } });
+
+  // Přiřazení balíčků k předmětům; po změně se historie přepočítá (s prodlevou, aby se změny stihly uložit).
+  const recompute = useRef<number | undefined>(undefined);
+  const scheduleRecompute = () => {
+    window.clearTimeout(recompute.current);
+    recompute.current = window.setTimeout(() => syncAnkiNow(true), 400);
+  };
+  const mapDeck = (deck: string, subjectId: string) => {
+    set({ deckSubjects: { ...cfg.deckSubjects, [deck]: subjectId } });
+    scheduleRecompute();
+  };
+  const usedColors = () => new Set(alive(data.subjects).map((s) => s.color));
+  const createSubjectFor = (deck: string, used = usedColors()): string => {
+    const name = prettyName(deck);
+    const existing = alive(data.subjects).find((s) => norm(s.name) === norm(name) && s.id !== ANKI_SUBJECT_ID);
+    if (existing) return existing.id;
+    const color = SUBJECT_COLORS.find((c) => !used.has(c)) ?? SUBJECT_COLORS[used.size % SUBJECT_COLORS.length];
+    used.add(color);
+    const id = uid();
+    upsert('subjects', { id, name, color, weeklyGoalMin: 0, archived: false });
+    return id;
+  };
+  const unmapped = (snap?.decks ?? []).filter((d) => {
+    const m = cfg.deckSubjects[d.name];
+    return !m || !subjects.some((s) => s.id === m);
+  });
+  const createAllMissing = () => {
+    const used = usedColors();
+    const next = { ...cfg.deckSubjects };
+    for (const d of unmapped) next[d.name] = createSubjectFor(d.name, used);
+    set({ deckSubjects: next });
+    scheduleRecompute();
+  };
 
   return (
     <div className="card">
@@ -96,26 +137,47 @@ export function AnkiSettings() {
 
             {snap && snap.decks.length > 0 && (
               <div className="stack tight">
-                <span className="label">balíček → předmět</span>
-                {snap.decks.map((d) => (
-                  <div key={d.name} className="row between" style={{ padding: '4px 0' }}>
-                    <span className="ellipsis small">{d.name}</span>
-                    <select
-                      className="input"
-                      style={{ width: 200 }}
-                      value={cfg.deckSubjects[d.name] ?? ''}
-                      onChange={(e) => set({ deckSubjects: { ...cfg.deckSubjects, [d.name]: e.target.value } })}
-                    >
-                      <option value="">Anki (samostatně)</option>
-                      {subjects.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-                <span className="small faint">Po změně přiřazení klikni na „Přepočítat historii“.</span>
+                <div className="row between">
+                  <span className="label">balíček → předmět</span>
+                  {unmapped.length > 0 && (
+                    <button className="btn sm" onClick={createAllMissing}>
+                      <Plus size={13} /> Založit předměty pro {unmapped.length} {plural(unmapped.length, 'balíček', 'balíčky', 'balíčků')}
+                    </button>
+                  )}
+                </div>
+                {snap.decks.map((d) => {
+                  const mapped = cfg.deckSubjects[d.name];
+                  const valid = mapped && subjects.some((s) => s.id === mapped);
+                  return (
+                    <div key={d.name} className="deck-map">
+                      <span className="ellipsis small">
+                        {d.name}
+                        <span className="faint num"> · {d.total} karet</span>
+                      </span>
+                      <select
+                        className={`input ${valid ? '' : 'unmapped'}`}
+                        value={valid ? mapped : ''}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === NEW) mapDeck(d.name, createSubjectFor(d.name));
+                          else mapDeck(d.name, v);
+                        }}
+                      >
+                        <option value="">Anki (samostatně)</option>
+                        {subjects.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                        <option value={NEW}>＋ Nový předmět „{prettyName(d.name)}“</option>
+                      </select>
+                    </div>
+                  );
+                })}
+                <span className="small faint">
+                  Čas strávený v balíčku se zapíše k vybranému předmětu – započítá se do jeho týdenního cíle, statistik, reportu a v kalendáři
+                  bude mít jeho barvu. Na samotnou Anki to nemá vliv. Po změně se historie přepočítá automaticky.
+                </span>
               </div>
             )}
           </>

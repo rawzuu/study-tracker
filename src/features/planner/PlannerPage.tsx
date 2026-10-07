@@ -12,7 +12,7 @@ import { useTimer } from '../timer/TimerContext';
 import { BlockModal, ExamModal, ExportModal } from './PlannerModals';
 import './planner.css';
 
-const HOUR_FROM = 6;
+const DEFAULT_HOUR_FROM = 6; // mřížka začíná v 6:00, pokud nemáš nic dřív (např. učení po půlnoci)
 const HOUR_TO = 24;
 const HOUR_H = 48;
 const SNAP_MIN = 15;
@@ -99,7 +99,7 @@ export function PlannerPage() {
   // Posuň pohled na aktuální hodinu; na úzké obrazovce i vodorovně na dnešek
   useEffect(() => {
     const h = new Date().getHours();
-    scrollRef.current?.scrollTo({ top: Math.max(0, (h - HOUR_FROM - 3) * HOUR_H) });
+    scrollRef.current?.scrollTo({ top: Math.max(0, (h - hourFrom - 3) * HOUR_H) });
     const x = scrollXRef.current;
     if (x && x.scrollWidth > x.clientWidth) {
       const idx = Math.round((startOfDay(Date.now()) - startOfWeek(Date.now())) / DAY);
@@ -128,6 +128,8 @@ export function PlannerPage() {
     return out;
   }, [blocks, weekSessions, layer, liveRunning, timer.state.workStartedAt, timer.state.subjectId, timer.state.topic, now, weekStart, weekEnd]);
 
+  const hourFrom = Math.min(DEFAULT_HOUR_FROM, ...items.map((it) => new Date(it.start).getHours()));
+
   const studied = bySubject(weekSessions);
   const planned = new Map<string, number>();
   for (const b of blocks) planned.set(b.subjectId, (planned.get(b.subjectId) ?? 0) + b.durationMin * 60);
@@ -142,7 +144,7 @@ export function PlannerPage() {
   const onGridClick = (e: React.MouseEvent<HTMLDivElement>, day: number) => {
     if ((e.target as HTMLElement).closest('.cal-item')) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const mins = Math.floor((((e.clientY - rect.top) / HOUR_H) * 60) / 30) * 30 + HOUR_FROM * 60;
+    const mins = Math.floor((((e.clientY - rect.top) / HOUR_H) * 60) / 30) * 30 + hourFrom * 60;
     const start = day + mins * MIN;
     if (layer === 'plan') setModal({ kind: 'block', start });
     else if (layer === 'done') setModal({ kind: 'session', start });
@@ -302,11 +304,11 @@ export function PlannerPage() {
                   })}
                 </div>
                 <div className="week-body" ref={scrollRef}>
-                  <div className="week-inner" style={{ height: (HOUR_TO - HOUR_FROM) * HOUR_H }}>
+                  <div className="week-inner" style={{ height: (HOUR_TO - hourFrom) * HOUR_H }}>
                     <div className="hours">
-                      {Array.from({ length: HOUR_TO - HOUR_FROM }, (_, i) => (
+                      {Array.from({ length: HOUR_TO - hourFrom }, (_, i) => (
                         <div key={i} className="hour-label" style={{ top: i * HOUR_H }}>
-                          {HOUR_FROM + i}:00
+                          {hourFrom + i}:00
                         </div>
                       ))}
                     </div>
@@ -315,13 +317,13 @@ export function PlannerPage() {
                       const lay = layoutDay(dayItems);
                       return (
                         <div key={d} className={`day-col ${d === today ? 'today' : ''}`} onClick={(e) => onGridClick(e, d)}>
-                          {Array.from({ length: HOUR_TO - HOUR_FROM }, (_, i) => (
+                          {Array.from({ length: HOUR_TO - hourFrom }, (_, i) => (
                             <div key={i} className="hour-line" style={{ top: i * HOUR_H }} />
                           ))}
-                          {d === today && <div className="now-line" style={{ top: ((now - d) / HOUR - HOUR_FROM) * HOUR_H }} />}
+                          {d === today && <div className="now-line" style={{ top: ((now - d) / HOUR - hourFrom) * HOUR_H }} />}
                           {dayItems.map((it) => {
                             const s = subj.get(it.subjectId);
-                            const startMin = (it.start - d) / MIN - HOUR_FROM * 60;
+                            const startMin = (it.start - d) / MIN - hourFrom * 60;
                             const durMin = Math.max(1, (it.end - it.start) / MIN);
                             const { lane, lanes } = lay.get(it.id)!;
                             const dragging = it.block && drag?.id === it.block.id;
