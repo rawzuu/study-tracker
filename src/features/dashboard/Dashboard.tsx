@@ -18,6 +18,7 @@ import { modeName } from '../timer/modes';
 import { AnkiPanel } from '../anki/AnkiPanel';
 import { NextUp } from '../recommend/NextUp';
 import { DayPlanModal } from '../dayplan/DayPlanModal';
+import { pendingSuggestions } from '../../lib/calibrate';
 import './dashboard.css';
 
 function greeting() {
@@ -111,6 +112,10 @@ export function Dashboard() {
   const prevMonthCount = inRange(sessions, prevMonth.getTime(), new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 1).getTime()).length;
   const [reportDismissed, dismissReport] = useDismiss(`st.dismiss.report.${prevMonth.getFullYear()}-${prevMonth.getMonth()}`);
   const showReport = new Date(now).getDate() <= 7 && prevMonthCount > 0 && !reportDismissed;
+  const reportSuggestions = useMemo(
+    () => (showReport ? pendingSuggestions(data, prevMonth.getFullYear(), prevMonth.getMonth()).length : 0),
+    [showReport, data], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const thisWeekReflection = data.reflections.find((r) => !r.deletedAt && r.weekStart === lastWeekKey() && r.focusNext);
 
   const [planOpen, setPlanOpen] = useState(false);
@@ -156,6 +161,12 @@ export function Dashboard() {
               <FileText size={16} />
               <span className="grow">
                 Report za <b>{MONTHS_GEN[prevMonth.getMonth()]}</b> je připravený – co, kdy a jak dlouho.
+                {reportSuggestions > 0 && (
+                  <span className="muted">
+                    {' '}
+                    Obsahuje {reportSuggestions} {plural(reportSuggestions, 'návrh', 'návrhy', 'návrhů')} na úpravu cílů.
+                  </span>
+                )}
               </span>
               <a className="btn sm" href="#/report">
                 Otevřít <ArrowRight size={13} />

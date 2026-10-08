@@ -8,6 +8,7 @@ import { addDays, dayKey, fmtDuration, fmtHours, WEEKDAYS_SHORT } from '../../li
 import { highlights, monthRange, pct, periodStats } from '../../lib/report';
 import { compareBars, donut, highlightBars, hourBars } from './charts';
 import { focusByHour, inRange } from '../../lib/stats';
+import { CalibrationCard } from './CalibrationCard';
 
 const MONTHS = ['leden', 'únor', 'březen', 'duben', 'květen', 'červen', 'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec'];
 const MONTHS_GEN = ['lednu', 'únoru', 'březnu', 'dubnu', 'květnu', 'červnu', 'červenci', 'srpnu', 'září', 'říjnu', 'listopadu', 'prosinci'];
@@ -47,6 +48,8 @@ export function ReportPage() {
   const now = new Date();
   const isFuture = from > now.getTime();
   const inProgress = now.getTime() >= from && now.getTime() < to;
+  // Návrhy úprav patří k poslednímu uzavřenému měsíci
+  const isLastClosed = to === new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const topicsStudied = new Set(inRange(sessions, from, to).filter((s) => s.topic).map((s) => `${s.subjectId}|${s.topic.toLowerCase()}`)).size;
 
   const shift = (n: number) => {
@@ -162,6 +165,8 @@ export function ReportPage() {
               <span className="foot">dní v řadě</span>
             </div>
           </div>
+
+          {isLastClosed && <CalibrationCard y={y} m={m} />}
 
           <div className="g12">
             <div className="card c-5 xl-4">

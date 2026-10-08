@@ -7,6 +7,7 @@ import { matchPlanBlocks } from '../planner/match';
 import { useStore } from '../../data/store';
 import { Session, alive, uid } from '../../data/schema';
 import { Empty, Field, Modal } from '../../components/ui';
+import { useRemoveWithUndo } from '../../components/undo';
 import { dayKey, fmtDayLabel, fmtDuration, fmtTime, fromLocalInput, toLocalInput } from '../../lib/time';
 import { totalSec } from '../../lib/stats';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
@@ -14,7 +15,8 @@ import { modeName } from '../timer/modes';
 import { FOCUS_LABELS } from '../timer/FocusRating';
 
 export function SessionModal({ session, initialStart, onClose }: { session?: Session; initialStart?: number; onClose: () => void }) {
-  const { upsert, upsertMany, remove } = useStore();
+  const { upsert, upsertMany } = useStore();
+  const removeWithUndo = useRemoveWithUndo();
   const defEnd = session?.end ?? Date.now();
   const [subjectId, setSubjectId] = useState(session?.subjectId ?? '');
   const [topic, setTopic] = useState(session?.topic ?? '');
@@ -69,7 +71,7 @@ export function SessionModal({ session, initialStart, onClose }: { session?: Ses
               className="btn danger left"
               onClick={() => {
                 if (confirm('Opravdu smazat toto sezení?')) {
-                  remove('sessions', session.id);
+                  removeWithUndo('sessions', session.id, 'Sezení smazáno');
                   onClose();
                 }
               }}

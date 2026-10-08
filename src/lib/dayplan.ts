@@ -1,6 +1,7 @@
 import { AppData, PlanBlock, alive } from '../data/schema';
 import { Activity, Recommendation, recommend } from './recommend';
 import { bestWindow } from './stats';
+import { lecturesIn } from './timetable';
 import { DAY, HOUR, MIN, addDays, atMinutes, startOfDay } from './time';
 
 /**
@@ -44,9 +45,10 @@ export function dayBounds(data: AppData, now = Date.now()) {
   return { day, from: Math.max(roundUp, hm(day, data.settings.planDayStart ?? '08:00')), to: hm(day, data.settings.planDayEnd ?? '22:00') };
 }
 
-/** Obsazené intervaly dne (plán + odučené), seřazené. */
+/** Obsazené intervaly dne (plán + odučené + výuka z rozvrhu), seřazené. */
 export function busyIntervals(data: AppData, day: number, exclude: Set<string> = new Set()): [number, number][] {
   const out: [number, number][] = [];
+  for (const l of lecturesIn(data, day, addDays(day, 1))) out.push([l.start, l.end]);
   for (const b of alive(data.planBlocks)) if (!exclude.has(b.id) && startOfDay(b.start) === day) out.push([b.start, b.start + b.durationMin * MIN]);
   for (const s of alive(data.sessions)) if (startOfDay(s.start) === day) out.push([s.start, s.end]);
   return out.sort((a, b) => a[0] - b[0]);

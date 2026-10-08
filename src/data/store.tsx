@@ -4,6 +4,7 @@ import { AppData, CollectionKey, Entity, SCHEMA_VERSION, Settings, emptyData } f
 import { migrate, needsMigration } from './migrations';
 import { hasNewer, mergeData, serialize } from './merge';
 import { GithubError, fetchRemote, loadGithubConfig, pushRemote } from './github';
+import { restoreEntity } from '../lib/trash';
 
 /**
  * Jediné místo, přes které aplikace čte a zapisuje data.
@@ -39,6 +40,7 @@ interface StoreValue {
   upsert: <K extends CollectionKey>(key: K, item: NewItem<K>) => void;
   upsertMany: <K extends CollectionKey>(key: K, items: NewItem<K>[]) => void;
   remove: (key: CollectionKey, id: string) => void;
+  restore: (key: CollectionKey, id: string) => void;
   setSettings: (patch: Partial<Settings>) => void;
   replaceAll: (d: AppData) => void;
   sync: SyncState;
@@ -257,6 +259,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  const restore = useCallback(
+    (key: CollectionKey, id: string) => update((d) => restoreEntity(d, key, id, Date.now())),
+    [update],
+  );
+
   const setSettings = useCallback(
     (patch: Partial<Settings>) => update((d) => ({ ...d, settings: { ...d.settings, ...patch, updatedAt: Date.now() } })),
     [update],
@@ -275,9 +282,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo<StoreValue | null>(
     () =>
       data
-        ? { data, update, upsert, upsertMany, remove, setSettings, replaceAll, sync, syncNow, refreshSyncConfig }
+        ? { data, update, upsert, upsertMany, remove, restore, setSettings, replaceAll, sync, syncNow, refreshSyncConfig }
         : null,
-    [data, update, upsert, upsertMany, remove, setSettings, replaceAll, sync, syncNow, refreshSyncConfig],
+    [data, update, upsert, upsertMany, remove, restore, setSettings, replaceAll, sync, syncNow, refreshSyncConfig],
   );
 
   if (fatal) {

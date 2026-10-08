@@ -3,6 +3,7 @@ import { Archive, Check, Play, Plus, Repeat, RotateCcw, Trash2 } from 'lucide-re
 import { useStore } from '../../data/store';
 import { Topic, alive } from '../../data/schema';
 import { Empty, Modal, useToast } from '../../components/ui';
+import { useRemoveWithUndo } from '../../components/undo';
 import { DAY, addDays, fmtDate, plural, startOfDay } from '../../lib/time';
 import { navigate } from '../../lib/router';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
@@ -114,7 +115,8 @@ function TopicRow({ t, onEdit }: { t: Topic; onEdit: () => void }) {
 }
 
 function TopicModal({ topic, onClose }: { topic?: Topic; onClose: () => void }) {
-  const { data, upsert, remove } = useStore();
+  const { data, upsert } = useStore();
+  const removeWithUndo = useRemoveWithUndo();
   const [subjectId, setSubjectId] = useState(topic?.subjectId ?? '');
   const [names, setNames] = useState(topic?.name ?? '');
   const [note, setNote] = useState(topic?.note ?? '');
@@ -144,7 +146,7 @@ function TopicModal({ topic, onClose }: { topic?: Topic; onClose: () => void }) 
                 className="btn danger left"
                 onClick={() => {
                   if (!confirm(`Smazat téma „${topic.name}“ i s historií opakování?`)) return;
-                  remove('topics', topic.id);
+                  removeWithUndo('topics', topic.id, 'Téma smazáno');
                   onClose();
                 }}
               >

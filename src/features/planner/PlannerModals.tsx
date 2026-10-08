@@ -3,6 +3,7 @@ import { CalendarCheck, Check, Download, Play, Sparkles, Trash2 } from 'lucide-r
 import { useStore } from '../../data/store';
 import { Exam, PlanBlock, alive, uid } from '../../data/schema';
 import { Field, Modal, Switch, useToast } from '../../components/ui';
+import { useRemoveWithUndo } from '../../components/undo';
 import { addDays, dayKey, fmtDayLabel, parseDayKey, startOfDay, toTimeInput } from '../../lib/time';
 import { navigate } from '../../lib/router';
 import { SubjectSelect } from '../subjects/SubjectSelect';
@@ -21,7 +22,8 @@ function combine(date: string, time: string): number {
 // Blok plánu
 // ============================================================
 export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock; initialStart?: number; onClose: () => void }) {
-  const { upsert, upsertMany, remove } = useStore();
+  const { upsert, upsertMany } = useStore();
+  const removeWithUndo = useRemoveWithUndo();
   const timer = useTimer();
   const toast = useToast();
   const start0 = block?.start ?? initialStart ?? Date.now();
@@ -66,7 +68,7 @@ export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock
             <button
               className="btn danger left"
               onClick={() => {
-                remove('planBlocks', block.id);
+                removeWithUndo('planBlocks', block.id, 'Blok smazán');
                 onClose();
               }}
             >
@@ -144,7 +146,7 @@ export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock
 // Zkouška + rozložené opakování
 // ============================================================
 export function ExamModal({ exam, onClose }: { exam?: Exam; onClose: () => void }) {
-  const { data, upsert, upsertMany, remove, update } = useStore();
+  const { data, upsert, upsertMany, update, restore } = useStore();
   const toast = useToast();
   const [subjectId, setSubjectId] = useState(exam?.subjectId ?? '');
   const [name, setName] = useState(exam?.name ?? '');
@@ -202,14 +204,16 @@ export function ExamModal({ exam, onClose }: { exam?: Exam; onClose: () => void 
               className="btn danger left"
               onClick={() => {
                 if (!confirm(`Smazat zkoušku „${exam.name}“? Smažou se i její budoucí naplánovaná opakování.`)) return;
-                remove('exams', exam.id);
+                // zkouška i její bloky se stejným časem smazání – Vrátit / Koš je pak obnoví spolu
                 const now = Date.now();
                 update((d) => ({
                   ...d,
+                  exams: d.exams.map((e) => (e.id === exam.id ? { ...e, deletedAt: now, updatedAt: now } : e)),
                   planBlocks: d.planBlocks.map((b) =>
                     b.examId === exam.id && !b.done && !b.deletedAt && b.start >= now ? { ...b, deletedAt: now, updatedAt: now } : b,
                   ),
                 }));
+                toast('Zkouška smazána', { label: 'Vrátit', onClick: () => restore('exams', exam.id) });
                 onClose();
               }}
             >

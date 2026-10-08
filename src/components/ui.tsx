@@ -95,21 +95,42 @@ export function Bar({ value, color = 'var(--accent)' }: { value: number; color?:
 }
 
 // ---------- toast ----------
-const ToastContext = createContext<(msg: string) => void>(() => {});
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+type ShowToast = (msg: string, action?: ToastAction) => void;
+const ToastContext = createContext<ShowToast>(() => {});
 export const useToast = () => useContext(ToastContext);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [msg, setMsg] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; action?: ToastAction } | null>(null);
   const timer = useRef<number | undefined>(undefined);
-  const show = useCallback((m: string) => {
-    setMsg(m);
+  const show = useCallback<ShowToast>((msg, action) => {
+    setToast({ msg, action });
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setMsg(null), 2600);
+    // s tlačítkem (např. Vrátit) zůstane déle, aby se dalo stihnout
+    timer.current = window.setTimeout(() => setToast(null), action ? 7000 : 2600);
   }, []);
   return (
     <ToastContext.Provider value={show}>
       {children}
-      {msg && <div className="toast">{msg}</div>}
+      {toast && (
+        <div className="toast" role="status">
+          <span>{toast.msg}</span>
+          {toast.action && (
+            <button
+              className="toast-action"
+              onClick={() => {
+                toast.action!.onClick();
+                setToast(null);
+              }}
+            >
+              {toast.action.label}
+            </button>
+          )}
+        </div>
+      )}
     </ToastContext.Provider>
   );
 }

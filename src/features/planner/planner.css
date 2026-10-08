@@ -207,6 +207,26 @@
   background: var(--panel-2);
 }
 
+/* Výuka z rozvrhu: neutrální obsazený čas, nejde přetahovat */
+.cal-lecture {
+  z-index: 1;
+  background: var(--panel-3);
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--text-3);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.cal-lecture b {
+  color: var(--text);
+  font-weight: 550;
+}
+.cal-lecture .t {
+  color: var(--text-3);
+}
+.cal-lecture:hover {
+  border-color: var(--text-3);
+}
+
 /* Odučeno: plná barva předmětu */
 .cal-done {
   z-index: 3;
@@ -268,7 +288,8 @@
   background: var(--line-strong);
 }
 .k-done,
-.k-plan {
+.k-plan,
+.k-lecture {
   display: inline-block;
   width: 16px;
   height: 10px;
@@ -279,6 +300,27 @@
 }
 .k-plan {
   border: 1.5px dashed var(--text-2);
+}
+.k-lecture {
+  background: var(--panel-3);
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--text-3);
+}
+
+/* Správa rozvrhu */
+.tt-summary {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.tt-diff {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 13px;
+}
+.tt-series.hidden .ellipsis {
+  color: var(--text-3);
+  text-decoration: line-through;
 }
 .k-done.big,
 .k-plan.big {

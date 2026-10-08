@@ -993,6 +993,10 @@ input[type='color'].input {
   left: 50%;
   transform: translateX(-50%);
   z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100vw - 32px);
   background: var(--panel-3);
   color: var(--text);
   padding: 9px 14px;
@@ -1001,6 +1005,19 @@ input[type='color'].input {
   font-size: 13px;
   font-weight: 500;
   animation: pop 0.18s var(--ease);
+}
+.toast-action {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.toast-action:hover {
+  text-decoration: underline;
 }
 
 /* ============================================================
@@ -1172,6 +1189,10 @@ input[type='color'].input {
     bottom: calc(66px + env(safe-area-inset-bottom));
     z-index: 39;
   }
+  /* hláška nad spodní lištou i nad mini časovačem */
+  .toast {
+    bottom: calc(122px + env(safe-area-inset-bottom));
+  }
   .mobile-mini .mini-timer {
     background: color-mix(in srgb, var(--panel-2) 90%, var(--accent) 10%);
     backdrop-filter: blur(16px);
@@ -1262,6 +1283,56 @@ input[type='color'].input {
   color: var(--accent);
   padding-top: 2px;
 }
+/* Návrhy na další měsíc (kalibrace) */
+.calib-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 28px;
+}
+.calib-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.calib-rows .calib-row:first-child,
+.calib-row.decided {
+  border-top-color: transparent;
+}
+.calib-values {
+  margin: 4px 0 6px;
+  font-size: 15px;
+}
+.calib-values .chip {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+.calib-reasons {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.calib-reasons li + li {
+  margin-top: 2px;
+}
+.calib-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+@media (max-width: 640px) {
+  .calib-row {
+    flex-direction: column;
+  }
+  .calib-actions {
+    flex-direction: row;
+  }
+}
+
 .reflection-row {
   width: 100%;
   border: 0;

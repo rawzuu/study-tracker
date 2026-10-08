@@ -108,6 +108,37 @@ export interface Exam extends Entity {
   note: string;
 }
 
+/**
+ * Importovaný rozvrh (např. školní z .ics). Slouží jen jako obsazený čas v kalendáři a v ranním plánu. (v2.3+)
+ * Celý rozvrh je jedna entita – nový import ho nahradí najednou a synchronizace řeší jen jeden záznam.
+ */
+export interface Timetable extends Entity {
+  name: string;
+  importedAt: number;
+  events: TimetableEvent[]; // jednotlivé termíny (opakování už rozbalená)
+  hiddenSeries: string[]; // skryté řady (předměty) – platí i po novém importu
+  skipped: string[]; // klíče jednotlivých termínů, které odpadají
+}
+
+export interface TimetableEvent {
+  key: string; // řada + začátek – stabilní mezi importy
+  series: string; // název akce – podle něj se skrývá celá řada
+  title: string;
+  location: string;
+  start: number;
+  end: number;
+}
+
+/** Záznam o návrhu z měsíčního reportu (použitý nebo ponechaný). (v2.3+) */
+export interface CalibrationEntry {
+  month: string; // YYYY-MM – měsíc reportu
+  key: 'dailyGoal' | 'weeklyGoals' | 'dayWindow';
+  action: 'applied' | 'kept';
+  at: number;
+  before?: unknown; // původní hodnota (kvůli vrácení)
+  after?: unknown; // nová hodnota (pro zobrazení v reportu)
+}
+
 export interface TimerPreset extends Entity {
   name: string;
   workMin: number;
@@ -152,6 +183,8 @@ export interface Settings {
   // v2.2+
   planDayStart: string; // HH:MM – od kdy plánovat den
   planDayEnd: string; // HH:MM
+  // v2.3+
+  calibration: CalibrationEntry[];
 }
 
 export interface AppData {
@@ -164,11 +197,12 @@ export interface AppData {
   topics: Topic[];
   reflections: Reflection[];
   anki: AnkiSnapshot[];
+  timetables: Timetable[]; // v2.3+
   settings: Settings;
 }
 
 /** Kolekce entit, které se slučují po jednotlivých záznamech. */
-export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets', 'topics', 'reflections', 'anki'] as const;
+export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets', 'topics', 'reflections', 'anki', 'timetables'] as const;
 export type CollectionKey = (typeof COLLECTIONS)[number];
 
 export const SUBJECT_COLORS = [
@@ -208,6 +242,7 @@ export function defaultSettings(): Settings {
     anki: { enabled: false, countTime: true, deckSubjects: {}, importDays: 60 },
     planDayStart: '08:00',
     planDayEnd: '22:00',
+    calibration: [],
   };
 }
 
@@ -222,6 +257,7 @@ export function emptyData(): AppData {
     topics: [],
     reflections: [],
     anki: [],
+    timetables: [],
     settings: defaultSettings(),
   };
 }

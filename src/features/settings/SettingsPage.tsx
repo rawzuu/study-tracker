@@ -10,6 +10,8 @@ import { GithubConfig, fetchRemote, loadGithubConfig, saveGithubConfig } from '.
 import { migrate } from '../../data/migrations';
 import { serialize } from '../../data/merge';
 import { Field, Segmented, Switch, useToast } from '../../components/ui';
+import { useRemoveWithUndo } from '../../components/undo';
+import { TrashSection } from './TrashSection';
 import { chime, requestNotifications, unlockAudio } from '../../lib/alerts';
 import { dayKey, fmtTime } from '../../lib/time';
 import { allModes } from '../timer/modes';
@@ -169,6 +171,7 @@ export function SettingsPage() {
       <CalendarFeedSection />
       <PresetsSection />
       <BackupSection />
+      <TrashSection />
 
       <div className="card">
         <div className="card-head">
@@ -365,7 +368,8 @@ function SyncSection() {
 // Vlastní režimy časovače
 // ============================================================
 function PresetsSection() {
-  const { data, upsert, remove } = useStore();
+  const { data, upsert } = useStore();
+  const removeWithUndo = useRemoveWithUndo();
   const presets = alive(data.presets);
   const [name, setName] = useState('');
   const [work, setWork] = useState(40);
@@ -400,7 +404,7 @@ function PresetsSection() {
                   {p.workMin} min práce · {p.shortBreakMin} min pauza · {p.longBreakMin} min dlouhá po {p.roundsBeforeLong} kolech
                 </div>
               </div>
-              <button className="btn ghost icon sm" onClick={() => remove('presets', p.id)} aria-label="Smazat">
+              <button className="btn ghost icon sm" onClick={() => removeWithUndo('presets', p.id, 'Režim smazán')} aria-label="Smazat">
                 <Trash2 size={15} />
               </button>
             </div>

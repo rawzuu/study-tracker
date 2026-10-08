@@ -1,5 +1,5 @@
 import { PointerEvent as RPointerEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarPlus, CalendarRange, Check, ChevronLeft, ChevronRight, Download, GraduationCap, PenLine, Plus } from 'lucide-react';
+import { CalendarPlus, CalendarRange, Check, ChevronLeft, ChevronRight, Download, GraduationCap, PenLine, Plus, School } from 'lucide-react';
 import { DayPlanModal } from '../dayplan/DayPlanModal';
 import { useStore } from '../../data/store';
 import { Exam, PlanBlock, Session, alive } from '../../data/schema';
@@ -11,6 +11,8 @@ import { SubjectTag } from '../subjects/SubjectSelect';
 import { SessionModal } from '../sessions/HistoryPage';
 import { useTimer } from '../timer/TimerContext';
 import { BlockModal, ExamModal, ExportModal } from './PlannerModals';
+import { LectureModal, TimetableModal } from './TimetableModal';
+import { Lecture, lecturesIn } from '../../lib/timetable';
 import './planner.css';
 
 const DEFAULT_HOUR_FROM = 6; // mřížka začíná v 6:00, pokud nemáš nic dřív (např. učení po půlnoci)
@@ -26,11 +28,13 @@ type ModalState =
   | { kind: 'choose'; start: number }
   | { kind: 'exam'; exam?: Exam }
   | { kind: 'export' }
+  | { kind: 'timetable' }
+  | { kind: 'lecture'; lecture: Lecture }
   | null;
 
-/** Položka kalendáře: plán (obrys), odučené sezení (plná barva) nebo právě běžící blok. */
+/** Položka kalendáře: plán (obrys), odučené sezení (plná barva), právě běžící blok nebo výuka z rozvrhu (šedě). */
 interface CalItem {
-  kind: 'plan' | 'done' | 'live';
+  kind: 'plan' | 'done' | 'live' | 'lecture';
   id: string;
   subjectId: string;
   start: number;
@@ -38,6 +42,7 @@ interface CalItem {
   title: string;
   block?: PlanBlock;
   session?: Session;
+  lecture?: Lecture;
 }
 
 function shiftMonth(t: number, n: number): number {
@@ -114,9 +119,11 @@ export function PlannerPage() {
   const blocks = useMemo(() => alive(data.planBlocks).filter((b) => b.start >= weekStart && b.start < weekEnd), [data.planBlocks, weekStart, weekEnd]);
   const weekSessions = useMemo(() => inRange(alive(data.sessions), weekStart, weekEnd), [data.sessions, weekStart, weekEnd]);
   const exams = alive(data.exams);
+  const lectures = useMemo(() => lecturesIn(data, weekStart, weekEnd), [data.timetables, weekStart, weekEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const items = useMemo<CalItem[]>(() => {
     const out: CalItem[] = [];
+    if (layer !== 'done') for (const l of lectures) out.push({ kind: 'lecture', id: `l-${l.timetableId}-${l.key}`, subjectId: '', start: l.start, end: l.end, title: l.title, lecture: l });
     if (layer !== 'done')
       for (const b of blocks)
         out.push({ kind: 'plan', id: `p-${b.id}`, subjectId: b.subjectId, start: b.start, end: b.start + b.durationMin * MIN, title: b.title, block: b });
@@ -128,7 +135,7 @@ export function PlannerPage() {
       }
     }
     return out;
-  }, [blocks, weekSessions, layer, liveRunning, timer.state.workStartedAt, timer.state.subjectId, timer.state.topic, now, weekStart, weekEnd]);
+  }, [blocks, lectures, weekSessions, layer, liveRunning, timer.state.workStartedAt, timer.state.subjectId, timer.state.topic, now, weekStart, weekEnd]);
 
   const hourFrom = Math.min(DEFAULT_HOUR_FROM, ...items.map((it) => new Date(it.start).getHours()));
 
@@ -206,6 +213,9 @@ export function PlannerPage() {
           </button>
           <button className="btn" onClick={() => setModal({ kind: 'exam' })}>
             <GraduationCap size={14} /> Zkouška
+          </button>
+          <button className="btn" onClick={() => setModal({ kind: 'timetable' })}>
+            <School size={14} /> Rozvrh
           </button>
           <button className="btn" onClick={() => setModal({ kind: 'session', start: now - HOUR })}>
             <PenLine size={14} /> Zapsat odučené
@@ -342,6 +352,22 @@ export function PlannerPage() {
                               transform: dragging ? `translate(${drag!.dayDelta * colWidth()}px, ${(drag!.minDelta / 60) * HOUR_H}px)` : undefined,
                             };
                             const timeLabel = `${fmtTime(it.start)}–${fmtTime(it.end)}`;
+                            if (it.kind === 'lecture') {
+                              const l = it.lecture!;
+                              return (
+                                <div
+                                  key={it.id}
+                                  className="cal-item cal-lecture"
+                                  style={style}
+                                  onClick={() => setModal({ kind: 'lecture', lecture: l })}
+                                  title={`Výuka: ${l.title}${l.location ? ' · ' + l.location : ''} · ${timeLabel}`}
+                                >
+                                  <b>{l.title}</b>
+                                  {h >= 34 && <span>{l.location || 'výuka'}</span>}
+                                  {h >= 50 && <span className="t">{timeLabel}</span>}
+                                </div>
+                              );
+                            }
                             if (it.kind === 'plan') {
                               const b = it.block!;
                               return (
@@ -392,6 +418,11 @@ export function PlannerPage() {
               <span className="legend-key">
                 <i className="k-plan" /> plán
               </span>
+              {lectures.length > 0 && (
+                <span className="legend-key">
+                  <i className="k-lecture" /> výuka
+                </span>
+              )}
               <span className="legend-sep" />
               {legend.length === 0 ? (
                 <span className="faint small">Tento týden zatím nic odučeno.</span>
@@ -501,6 +532,8 @@ export function PlannerPage() {
       {modal?.kind === 'session' && <SessionModal session={modal.session} initialStart={modal.start} onClose={() => setModal(null)} />}
       {modal?.kind === 'exam' && <ExamModal exam={modal.exam} onClose={() => setModal(null)} />}
       {modal?.kind === 'export' && <ExportModal onClose={() => setModal(null)} />}
+      {modal?.kind === 'timetable' && <TimetableModal onClose={() => setModal(null)} />}
+      {modal?.kind === 'lecture' && <LectureModal lecture={modal.lecture} onClose={() => setModal(null)} onManage={() => setModal({ kind: 'timetable' })} />}
       {dayPlan && <DayPlanModal onClose={() => setDayPlan(false)} />}
     </div>
   );

@@ -3,11 +3,13 @@ import { Archive, ArchiveRestore, BookMarked, Pencil, Plus, Trash2 } from 'lucid
 import { useStore } from '../../data/store';
 import { SUBJECT_COLORS, Subject, alive, uid } from '../../data/schema';
 import { Empty, Field, Modal } from '../../components/ui';
+import { useRemoveWithUndo } from '../../components/undo';
 import { fmtDuration } from '../../lib/time';
 import { bySubject } from '../../lib/stats';
 
 function SubjectModal({ subject, onClose }: { subject?: Subject; onClose: () => void }) {
-  const { data, upsert, remove } = useStore();
+  const { data, upsert } = useStore();
+  const removeWithUndo = useRemoveWithUndo();
   const used = new Set(alive(data.subjects).map((s) => s.color));
   const [name, setName] = useState(subject?.name ?? '');
   const [color, setColor] = useState(subject?.color ?? SUBJECT_COLORS.find((c) => !used.has(c)) ?? SUBJECT_COLORS[0]);
@@ -35,7 +37,7 @@ function SubjectModal({ subject, onClose }: { subject?: Subject; onClose: () => 
             <button
               className="btn danger left"
               onClick={() => {
-                remove('subjects', subject.id);
+                removeWithUndo('subjects', subject.id, 'Předmět smazán');
                 onClose();
               }}
             >
