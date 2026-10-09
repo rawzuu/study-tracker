@@ -52,6 +52,14 @@ export interface Topic extends Entity {
   mastered: boolean; // zvládnuto – už se neopakuje
   note: string;
   fsrs?: TopicFsrs; // v2.1+: stav algoritmu FSRS-6 (stage/nextReviewAt se dál vyplňují kvůli starším verzím)
+  log?: ReviewLog[]; // v2.5+: historie opakování (pro budoucí přizpůsobení FSRS tvé paměti)
+}
+
+/** Jedno opakování tématu. (v2.5+) */
+export interface ReviewLog {
+  at: number;
+  rating: 1 | 2 | 3 | 4; // Znovu / Těžko / Dobře / Snadno
+  auto?: boolean; // hodnocení doplněné automaticky (blok z časovače bez ohodnocení)
 }
 
 /** Stav tématu podle FSRS (paměťový model Stabilita–Obtížnost–Vybavitelnost). */
@@ -118,6 +126,12 @@ export interface Timetable extends Entity {
   events: TimetableEvent[]; // jednotlivé termíny (opakování už rozbalená)
   hiddenSeries: string[]; // skryté řady (předměty) – platí i po novém importu
   skipped: string[]; // klíče jednotlivých termínů, které odpadají
+  seriesSubjects?: Record<string, string>; // v2.5+: řada → předmět (opakování po přednášce)
+}
+
+/** Získaný úspěch – uložený natrvalo, aby ho pozdější změna cílů nebo dat nevzala. (v2.5+) */
+export interface AchievementRecord extends Entity {
+  at: number; // kdy byl získán (odhad z dat nebo okamžik zjištění)
 }
 
 export interface TimetableEvent {
@@ -187,6 +201,12 @@ export interface Settings {
   calibration: CalibrationEntry[];
   // v2.4+
   hiddenPages: string[]; // stránky skryté z nabídky (např. 'reflexe')
+  // v2.5+ – volitelné funkce (každou jde vypnout)
+  morningPrompt: boolean; // ranní výzva k naplánování dne na přehledu
+  lectureRecap: boolean; // krátké opakování po přednášce z rozvrhu
+  streakRestDays: number; // kolik dní volna týdně sérii nepřeruší (0–2)
+  streakMinMin: number; // od kolika minut učení se den počítá do série (0 = jakékoli)
+  tokenWarning: boolean; // upozornit, když synchronizace s GitHubem selhává nebo končí platnost tokenu
 }
 
 export interface AppData {
@@ -200,11 +220,12 @@ export interface AppData {
   reflections: Reflection[];
   anki: AnkiSnapshot[];
   timetables: Timetable[]; // v2.3+
+  achievements: AchievementRecord[]; // v2.5+
   settings: Settings;
 }
 
 /** Kolekce entit, které se slučují po jednotlivých záznamech. */
-export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets', 'topics', 'reflections', 'anki', 'timetables'] as const;
+export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets', 'topics', 'reflections', 'anki', 'timetables', 'achievements'] as const;
 export type CollectionKey = (typeof COLLECTIONS)[number];
 
 export const SUBJECT_COLORS = [
@@ -246,6 +267,11 @@ export function defaultSettings(): Settings {
     planDayEnd: '22:00',
     calibration: [],
     hiddenPages: [],
+    morningPrompt: true,
+    lectureRecap: true,
+    streakRestDays: 0,
+    streakMinMin: 0,
+    tokenWarning: true,
   };
 }
 
@@ -261,6 +287,7 @@ export function emptyData(): AppData {
     reflections: [],
     anki: [],
     timetables: [],
+    achievements: [],
     settings: defaultSettings(),
   };
 }

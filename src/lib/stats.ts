@@ -1,5 +1,5 @@
 import { Session, Subject } from '../data/schema';
-import { DAY, addDays, dayKey, startOfDay, weekdayIdx } from './time';
+import { addDays, dayKey, parseDayKey, startOfDay, startOfWeek, weekdayIdx } from './time';
 
 export function inRange(sessions: Session[], from: number, to: number): Session[] {
   return sessions.filter((s) => s.start >= from && s.start < to);
@@ -25,28 +25,52 @@ export function bySubject(list: Session[]): Map<string, number> {
   return m;
 }
 
-/** Série dní po sobě, kdy ses učil (aktuální může začínat i včera). */
-export function streaks(list: Session[]): { current: number; best: number } {
-  const days = new Set(list.map((s) => dayKey(s.start)));
+/** Pravidla série: kolik dní volna týdně ji nepřeruší a od kolika minut se den počítá. */
+export interface StreakRules {
+  restDays?: number; // 0–2 dny volna za týden (Po–Ne)
+  minMin?: number; // 0 = jakékoli učení
+}
+
+/** Dny, které se počítají do série (aspoň `minMin` minut učení). */
+export function streakDays(list: Session[], minMin = 0): Set<string> {
+  const per = byDay(list);
+  return new Set([...per.entries()].filter(([, sec]) => sec > 0 && sec >= minMin * 60).map(([k]) => k));
+}
+
+/**
+ * Průběh série den po dni od `from` do dne `until` (včetně). Série = počet dní s učením;
+ * den bez učení ji nepřeruší, pokud v daném týdnu ještě zbývá den volna. Dnešek, který ještě
+ * neskončil, ji nepřeruší nikdy.
+ */
+export function streakRuns(days: Set<string>, from: number, until: number, restDays = 0): { t: number; run: number }[] {
+  const out: { t: number; run: number }[] = [];
+  const end = startOfDay(until);
+  let run = 0;
+  let week = -1;
+  let rest = 0;
+  for (let t = startOfDay(from); t <= end; t = addDays(t, 1)) {
+    const w = startOfWeek(t);
+    if (w !== week) {
+      week = w;
+      rest = 0;
+    }
+    if (days.has(dayKey(t))) run++;
+    else if (t === end) {
+      /* dnešek ještě běží */
+    } else if (run > 0 && rest < restDays) rest++;
+    else run = 0;
+    out.push({ t, run });
+  }
+  return out;
+}
+
+/** Aktuální a nejdelší série. */
+export function streaks(list: Session[], rules: StreakRules = {}, now = Date.now()): { current: number; best: number } {
+  const days = streakDays(list, rules.minMin ?? 0);
   if (!days.size) return { current: 0, best: 0 };
-  const sorted = [...days].sort();
-  let best = 1;
-  let run = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1]);
-    const cur = new Date(sorted[i]);
-    const diff = Math.round((cur.getTime() - prev.getTime()) / DAY);
-    run = diff === 1 ? run + 1 : 1;
-    best = Math.max(best, run);
-  }
-  let current = 0;
-  let t = startOfDay(Date.now());
-  if (!days.has(dayKey(t))) t = addDays(t, -1);
-  while (days.has(dayKey(t))) {
-    current++;
-    t = addDays(t, -1);
-  }
-  return { current, best };
+  const first = parseDayKey([...days].sort()[0]).getTime();
+  const runs = streakRuns(days, first, now, rules.restDays ?? 0);
+  return { current: runs[runs.length - 1]?.run ?? 0, best: Math.max(0, ...runs.map((r) => r.run)) };
 }
 
 /**
@@ -112,4 +136,49 @@ export function bestWindow(list: Session[]): { from: number; to: number } | null
 
 export function subjectMap(subjects: Subject[]): Map<string, Subject> {
   return new Map(subjects.map((s) => [s.id, s]));
+}
+
+/** Minuty sezení rozdělené do hodin dne (podle toho, kdy opravdu probíhalo). */
+function hourMinutes(s: Session): [number, number][] {
+  const out: [number, number][] = [];
+  const span = Math.max(1, s.end - s.start);
+  const ratio = (s.durationSec * 1000) / span;
+  let t = s.start;
+  while (t < s.end) {
+    const d = new Date(t);
+    const next = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours() + 1).getTime();
+    const seg = Math.min(next, s.end) - t;
+    out.push([d.getHours(), (seg * ratio) / 60_000]);
+    t += seg;
+  }
+  return out;
+}
+
+/**
+ * Nejsilnější 2hodinové okno podle KVALITY soustředění (vážený průměr hodnocení 1–5).
+ * Málo dat v okně se „přitahuje“ k celkovému průměru, aby nevyhrálo okno s jedním výborným blokem.
+ * Bez dostatku hodnocení se vrátí okno podle množství učení.
+ */
+export function focusWindow(list: Session[]): { from: number; to: number } | null {
+  const rated = list.filter((s) => s.focus && s.mode !== 'anki');
+  if (rated.length < 8) return bestWindow(list);
+  const min = new Array<number>(24).fill(0);
+  const fsum = new Array<number>(24).fill(0);
+  for (const s of rated)
+    for (const [h, m] of hourMinutes(s)) {
+      min[h] += m;
+      fsum[h] += m * (s.focus ?? 0);
+    }
+  const total = min.reduce((a, b) => a + b, 0);
+  const g = fsum.reduce((a, b) => a + b, 0) / total;
+  const K = 90; // „virtuálních“ minut s průměrným soustředěním
+  let best: { at: number; score: number } | null = null;
+  for (let i = 0; i < 24; i++) {
+    const j = (i + 1) % 24;
+    const w = min[i] + min[j];
+    if (w < Math.max(60, total * 0.05)) continue;
+    const score = (fsum[i] + fsum[j] + K * g) / (w + K);
+    if (!best || score > best.score) best = { at: i, score };
+  }
+  return best ? { from: best.at, to: (best.at + 2) % 24 } : bestWindow(list);
 }

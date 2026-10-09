@@ -3,12 +3,21 @@
  * Každý zápis = jeden commit, takže máš úplnou historii dat a můžeš se vrátit k libovolné verzi.
  */
 
+import { DAY, parseDayKey, startOfDay } from '../lib/time';
+
 export interface GithubConfig {
   owner: string;
   repo: string;
   branch: string;
   path: string;
   token: string;
+  expires?: string; // YYYY-MM-DD – konec platnosti tokenu (nepovinné; GitHub ho prohlížeči neprozradí)
+}
+
+/** Kolik dní zbývá do konce platnosti tokenu (null = neznámo). */
+export function tokenDaysLeft(c: GithubConfig | null, now = Date.now()): number | null {
+  if (!c?.expires || !/^\d{4}-\d{2}-\d{2}$/.test(c.expires)) return null;
+  return Math.round((parseDayKey(c.expires).getTime() - startOfDay(now)) / DAY);
 }
 
 const CONFIG_KEY = 'st.github';

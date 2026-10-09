@@ -88,9 +88,12 @@ export function DayPlanModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="dp-axis">
-          {busy.map(([a, b], i) => (
-            <i key={i} className="dp-busy" style={{ left: pct(a), width: `calc(${pct(b)} - ${pct(a)})` }} />
-          ))}
+          {busy
+            .map(([a, b]) => [Math.max(a, axisStart), Math.min(b, axisEnd)] as const) // jen část, která je na ose (blok přes půlnoc by jinak přetékal)
+            .filter(([a, b]) => b > a)
+            .map(([a, b], i) => (
+              <i key={i} className="dp-busy" style={{ left: pct(a), width: `calc(${pct(b)} - ${pct(a)})` }} />
+            ))}
           {items
             .filter((i) => i.include && i.start)
             .map((i) => (
@@ -155,7 +158,7 @@ export function DayPlanModal({ onClose }: { onClose: () => void }) {
           <input className="input num" style={{ width: 96, height: 28 }} type="time" value={data.settings.planDayStart} onChange={(e) => setSettings({ planDayStart: e.target.value })} />
           <span>a</span>
           <input className="input num" style={{ width: 96, height: 28 }} type="time" value={data.settings.planDayEnd} onChange={(e) => setSettings({ planDayEnd: e.target.value })} />
-          <span>· mezi bloky 10 min pauza · náročná látka přednostně do tvé nejsilnější denní doby</span>
+          <span>· pauza podle délky bloku · náročná látka přednostně do doby, kdy se ti nejlépe soustředí</span>
         </div>
       </div>
     </Modal>

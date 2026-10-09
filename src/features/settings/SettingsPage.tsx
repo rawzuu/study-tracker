@@ -6,12 +6,13 @@ import { FEED_FILE, buildFeed, feedHttpsUrl, feedWebcalUrl, publishFeed, readFee
 import { createGist } from '../../data/github';
 import { useStore } from '../../data/store';
 import { SCHEMA_VERSION, ThemePref, alive, uid } from '../../data/schema';
-import { GithubConfig, fetchRemote, loadGithubConfig, saveGithubConfig } from '../../data/github';
+import { GithubConfig, fetchRemote, loadGithubConfig, saveGithubConfig, tokenDaysLeft } from '../../data/github';
 import { migrate } from '../../data/migrations';
 import { serialize } from '../../data/merge';
 import { Field, Segmented, Switch, useToast } from '../../components/ui';
 import { useRemoveWithUndo } from '../../components/undo';
 import { TrashSection } from './TrashSection';
+import { FeaturesSection } from './FeaturesSection';
 import { chime, requestNotifications, unlockAudio } from '../../lib/alerts';
 import { dayKey, fmtTime } from '../../lib/time';
 import { allModes } from '../timer/modes';
@@ -168,6 +169,7 @@ export function SettingsPage() {
         </Row>
       </div>
 
+      <FeaturesSection />
       <ReviewSection />
       <AnkiSettings />
       <CalendarFeedSection />
@@ -297,6 +299,25 @@ function SyncSection() {
             Data se ukládají do <code>{existing.owner}/{existing.repo}</code> → <code>{existing.path}</code> (větev {existing.branch}).
             Každá změna = commit, takže máš celou historii.
           </p>
+          <div className="row wrap small" style={{ gap: 8 }}>
+            <span className="muted">Token platí do</span>
+            <input
+              type="date"
+              className="input"
+              style={{ width: 170, height: 30 }}
+              value={existing.expires ?? ''}
+              onChange={(e) => {
+                saveGithubConfig({ ...existing, expires: e.target.value || undefined });
+                refreshSyncConfig();
+              }}
+              title="Datum uvidíš na GitHubu u tokenu (Settings → Personal access tokens). Aplikace pak včas připomene výměnu."
+            />
+            {(() => {
+              const d = tokenDaysLeft(existing);
+              if (d == null) return <span className="faint">nepovinné – aplikace pak připomene výměnu</span>;
+              return <span className={`chip ${d <= 14 ? 'warn' : ''}`}>{d <= 0 ? 'vypršel' : `zbývá ${d} ${d === 1 ? 'den' : d < 5 ? 'dny' : 'dní'}`}</span>;
+            })()}
+          </div>
           <div className="row wrap">
             <button className="btn" onClick={() => void syncNow()} disabled={sync.status === 'syncing'}>
               <RefreshCw size={15} /> Synchronizovat teď
@@ -363,16 +384,21 @@ function SyncSection() {
               <input className="input" value={cfg.path} onChange={(e) => setCfg({ ...cfg, path: e.target.value.trim() })} />
             </Field>
           </div>
-          <Field label="Token">
-            <input
-              className="input"
-              type="password"
-              autoComplete="off"
-              placeholder="github_pat_…"
-              value={cfg.token}
-              onChange={(e) => setCfg({ ...cfg, token: e.target.value.trim() })}
-            />
-          </Field>
+          <div className="grid cols-2" style={{ gap: 10 }}>
+            <Field label="Token">
+              <input
+                className="input"
+                type="password"
+                autoComplete="off"
+                placeholder="github_pat_…"
+                value={cfg.token}
+                onChange={(e) => setCfg({ ...cfg, token: e.target.value.trim() })}
+              />
+            </Field>
+            <Field label="Platnost tokenu do (nepovinné)" hint="GitHub ji ukáže při vytvoření tokenu – aplikace pak včas připomene výměnu.">
+              <input className="input" type="date" value={cfg.expires ?? ''} onChange={(e) => setCfg({ ...cfg, expires: e.target.value || undefined })} />
+            </Field>
+          </div>
           {error && (
             <div className="callout bad">
               <AlertTriangle size={16} />

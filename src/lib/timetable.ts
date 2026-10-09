@@ -97,3 +97,33 @@ export function seriesOf(tt: Timetable, now = Date.now()): SeriesInfo[] {
     })
     .sort((a, b) => a.series.localeCompare(b.series, 'cs'));
 }
+
+export const norm = (v: string) =>
+  v
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/**
+ * Předmět, ke kterému hodina z rozvrhu patří: ruční přiřazení v rozvrhu, jinak podle názvu
+ * („Matematika I – přednáška“ → předmět „Matematika“). '-' = vědomě bez předmětu.
+ */
+export function lectureSubject(data: AppData, timetableId: string, series: string): string | null {
+  const tt = (data.timetables ?? []).find((t) => t.id === timetableId);
+  const manual = tt?.seriesSubjects?.[series];
+  if (manual === '-') return null;
+  const subjects = alive(data.subjects).filter((s) => !s.archived && s.id !== 'anki');
+  if (manual && subjects.some((s) => s.id === manual)) return manual;
+  const n = ` ${norm(series)} `;
+  let best: { id: string; len: number } | null = null;
+  for (const s of subjects) {
+    const sn = norm(s.name);
+    if (sn.length < 3) continue;
+    if (n.includes(` ${sn} `) || n.startsWith(` ${sn}`)) {
+      if (!best || sn.length > best.len) best = { id: s.id, len: sn.length };
+    }
+  }
+  return best?.id ?? null;
+}

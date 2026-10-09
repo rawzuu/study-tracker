@@ -235,7 +235,7 @@ export function TopicsPage() {
       'topics',
       fromHistory.map((h) => {
         let t = newTopic(h.subjectId, h.name);
-        t = applyStudy(t, h.last, 'ok', ctxFrom(data));
+        t = applyStudy(t, h.last, 'ok', ctxFrom(data), { auto: true });
         return { ...t, reviews: h.count };
       }),
     );

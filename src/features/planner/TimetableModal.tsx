@@ -5,7 +5,7 @@ import { Timetable, alive, uid } from '../../data/schema';
 import { Field, Modal, useToast } from '../../components/ui';
 import { useRemoveWithUndo } from '../../components/undo';
 import { IcsResult, parseIcs } from '../../lib/ical';
-import { Lecture, diffTimetable, replaceEvents, seriesOf } from '../../lib/timetable';
+import { Lecture, diffTimetable, lectureSubject, replaceEvents, seriesOf } from '../../lib/timetable';
 import { fmtDate, fmtDayLabel, fmtTime, plural } from '../../lib/time';
 
 interface Pending {
@@ -68,6 +68,16 @@ export function TimetableModal({ onClose }: { onClose: () => void }) {
       toast('Rozvrh importován');
     }
     setPending(null);
+  };
+
+  const subjects = alive(data.subjects).filter((x) => !x.archived && x.id !== 'anki');
+  const recapOn = data.settings.lectureRecap !== false;
+  /** Přiřazení řady k předmětu ('' = automaticky podle názvu, '-' = žádný). */
+  const setSubject = (tt: Timetable, series: string, value: string) => {
+    const map = { ...(tt.seriesSubjects ?? {}) };
+    if (value) map[series] = value;
+    else delete map[series];
+    upsert('timetables', { ...tt, seriesSubjects: map });
   };
 
   const toggleSeries = (tt: Timetable, series: string) => {
@@ -177,6 +187,27 @@ export function TimetableModal({ onClose }: { onClose: () => void }) {
                         {s.when} · zbývá {s.upcoming} z {s.count}
                       </div>
                     </div>
+                    {recapOn && !s.hidden && (
+                      <select
+                        className="input tt-subject"
+                        value={tt.seriesSubjects?.[s.series] ?? ''}
+                        onChange={(e) => setSubject(tt, s.series, e.target.value)}
+                        title="Předmět pro opakování po přednášce"
+                      >
+                        <option value="">
+                          {(() => {
+                            const auto = lectureSubject({ ...data, timetables: [{ ...tt, seriesSubjects: {} }] }, tt.id, s.series);
+                            return auto ? `${subjects.find((x) => x.id === auto)?.name} (auto)` : 'bez předmětu (auto)';
+                          })()}
+                        </option>
+                        {subjects.map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {x.name}
+                          </option>
+                        ))}
+                        <option value="-">žádný</option>
+                      </select>
+                    )}
                     <button className="btn ghost icon sm" onClick={() => toggleSeries(tt, s.series)} aria-label={s.hidden ? 'Zobrazit' : 'Skrýt'} title={s.hidden ? 'Zobrazit v kalendáři' : 'Skrýt (např. nepovinný předmět)'}>
                       {s.hidden ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>

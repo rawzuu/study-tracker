@@ -1,6 +1,7 @@
 import { AppData, Session, alive } from '../../data/schema';
 import { BUILTIN_MODES } from '../timer/modes';
 import { DAY, addDays, dayKey, parseDayKey, startOfDay, startOfWeek } from '../../lib/time';
+import { streakDays, streakRuns } from '../../lib/stats';
 
 /**
  * Úspěchy (odznaky). Počítají se vždy z dat – jsou tedy zpětné, synchronizované a nikdy „neutečou“.
@@ -94,17 +95,12 @@ const H = 3600;
 const fmtN = (n: number) => n.toLocaleString('cs-CZ');
 const cz = (n: number, one: string, few: string, many: string) => (n === 1 ? one : n >= 2 && n <= 4 ? few : many);
 
+/** Série podle stejných pravidel jako na přehledu (dny volna, minimum minut). */
 function streakMetric(f: Facts): Metric {
-  const pts: [number, number][] = [];
-  let run = 0;
-  let prev: number | null = null;
-  for (const k of f.daysSorted) {
-    const t = parseDayKey(k).getTime();
-    run = prev != null && Math.round((t - prev) / DAY) === 1 ? run + 1 : 1;
-    prev = t;
-    pts.push([t, run]);
-  }
-  return record(pts);
+  const days = streakDays(f.sessions, f.data.settings.streakMinMin ?? 0);
+  if (!days.size) return plain(0);
+  const first = parseDayKey([...days].sort()[0]).getTime();
+  return record(streakRuns(days, first, f.now, f.data.settings.streakRestDays ?? 0).map((r) => [r.t, r.run]));
 }
 
 function weekTotals(f: Facts): [number, number][] {
@@ -255,30 +251,46 @@ export interface Results {
 
 export function evaluate(data: AppData, now = Date.now()): Results {
   const f = buildFacts(data, now);
+  // Jednou získaný úspěch zůstává (uložený v datech) – i když se později změní cíle nebo se smaže téma.
+  const stored = new Map((data.achievements ?? []).filter((a) => !a.deletedAt).map((a) => [a.id, a.at]));
   // Úspěchy skrytých stránek (např. Reflexe) se nezobrazují ani nepočítají.
   const hidden = new Set(data.settings.hiddenPages ?? []);
   const visible = <T extends { feature?: string }>(x: T) => !x.feature || !hidden.has(x.feature);
   const families = FAMILIES.filter(visible).map((fam) => {
     const m = fam.metric(f);
-    const tiers = fam.thresholds.map((th) => {
-      const unlocked = m.value >= th - 1e-9;
-      return { threshold: th, unlocked, at: unlocked ? m.reachedAt(th) : null };
+    const tiers = fam.thresholds.map((th, i) => {
+      const computed = m.value >= th - 1e-9;
+      const kept = stored.get(`${fam.id}.${i + 1}`);
+      const unlocked = computed || kept != null;
+      const at = computed ? (m.reachedAt(th) ?? kept ?? null) : (kept ?? null);
+      return { threshold: th, unlocked, at };
     });
-    const tier = tiers.filter((t) => t.unlocked).length;
+    const tier = tiers.findIndex((t) => !t.unlocked) === -1 ? tiers.length : tiers.findIndex((t) => !t.unlocked);
     const next = fam.thresholds[tier] ?? null;
     const prev = tier ? fam.thresholds[tier - 1] : 0;
     return { family: fam, value: m.value, tier, tiers, next, progress: next == null ? 1 : Math.max(0, Math.min(1, (m.value - prev) / (next - prev))) };
   });
   const singles = SINGLES.filter(visible).map((s) => {
-    const at = s.check(f);
-    return { single: s, unlocked: at != null, at: at != null && at >= 0 ? at : null };
+    const computed = s.check(f);
+    const kept = stored.get(s.id);
+    const at = computed != null && computed >= 0 ? computed : (kept ?? null);
+    return { single: s, unlocked: computed != null || kept != null, at };
   });
   const unlockedIds = [
-    ...families.flatMap((r) => r.tiers.map((t, i) => (t.unlocked ? `${r.family.id}.${i + 1}` : null)).filter((x): x is string => !!x)),
+    ...families.flatMap((r) => r.tiers.slice(0, r.tier).map((_, i) => `${r.family.id}.${i + 1}`)),
     ...singles.filter((s) => s.unlocked).map((s) => s.single.id),
   ];
   const total = families.reduce((a, r) => a + r.family.thresholds.length, 0) + singles.length;
   return { families, singles, unlockedIds, total, unlocked: unlockedIds.length };
+}
+
+/** Úspěchy, které jsou získané, ale ještě nejsou uložené natrvalo (k zapsání do dat). */
+export function toPersist(data: AppData, res: Results, now = Date.now()): { id: string; at: number }[] {
+  const known = new Set((data.achievements ?? []).map((a) => a.id));
+  const atOf = new Map<string, number | null>();
+  for (const r of res.families) r.tiers.forEach((t, i) => atOf.set(`${r.family.id}.${i + 1}`, t.at));
+  for (const s of res.singles) atOf.set(s.single.id, s.at);
+  return res.unlockedIds.filter((id) => !known.has(id)).map((id) => ({ id, at: atOf.get(id) ?? now }));
 }
 
 export const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];

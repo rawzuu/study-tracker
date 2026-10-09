@@ -29,7 +29,7 @@ export type SyncState =
   | { status: 'idle'; at?: number }
   | { status: 'syncing' }
   | { status: 'ok'; at: number }
-  | { status: 'error'; message: string; at: number };
+  | { status: 'error'; message: string; at: number; code?: number };
 
 type ItemOf<K extends CollectionKey> = AppData[K][number];
 type NewItem<K extends CollectionKey> = Omit<ItemOf<K>, 'createdAt' | 'updatedAt'> & Partial<Entity>;
@@ -184,7 +184,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       setSync({ status: 'ok', at: Date.now() });
     } catch (e) {
-      setSync({ status: 'error', message: e instanceof Error ? e.message : String(e), at: Date.now() });
+      setSync({ status: 'error', message: e instanceof Error ? e.message : String(e), at: Date.now(), code: e instanceof GithubError ? e.status : undefined });
     } finally {
       syncing.current = false;
       if (syncAgain.current) {

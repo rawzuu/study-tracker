@@ -1,18 +1,20 @@
 import { AppData, PlanBlock, alive } from '../data/schema';
 import { Activity, Recommendation, recommend } from './recommend';
-import { bestWindow } from './stats';
-import { lecturesIn } from './timetable';
+import { focusWindow } from './stats';
+import { lectureSubject, lecturesIn } from './timetable';
 import { DAY, HOUR, MIN, addDays, atMinutes, startOfDay } from './time';
 
 /**
  * Ranní plánování: navrhne bloky na zbytek dne.
  *
- * 1. Nejdřív nabídne přesunutí nedokončených bloků ze včerejška.
+ * 1. Nejdřív nabídne přesunutí nedokončených bloků ze včerejška a (volitelně) krátké opakování
+ *    po dnešních přednáškách z rozvrhu.
  * 2. Pak opakovaně volá doporučovací algoritmus a „simuluje“, že vybraný blok už je v plánu
  *    (sníží zaostávání za cílem, odškrtne témata, přidá penalizaci za stejný předmět) –
  *    výsledkem je prokládaný plán podle priorit, dokud se nenaplní denní cíl.
- * 3. Bloky rozmístí do volných míst (mezi existující plán a odučené bloky, s pauzou 10 min);
- *    náročné bloky (nová látka, příprava na zkoušku) přednostně do tvé nejsilnější denní doby.
+ * 3. Rozmístění: opakování po přednášce hned za hodinu; náročné bloky (nová látka, pokračování,
+ *    příprava na zkoušku) do tvé nejsilnější doby podle soustředění; zbytek do nejbližších volných
+ *    míst. Stejný předmět nikdy dvakrát za sebou (když je z čeho vybírat), pauza podle délky bloku.
  */
 
 export interface DayPlanItem {
@@ -25,9 +27,13 @@ export interface DayPlanItem {
   reasons: string[];
   include: boolean;
   carry?: PlanBlock; // existující blok, který se jen přesune
+  after?: number; // umístit hned po tomto čase (opakování po přednášce)
 }
 
 const GAP = 10 * MIN;
+
+/** Pauza po bloku podle jeho délky (25 → 5 min, 50 → 10 min, 90 → 20 min). */
+export const breakAfter = (minutes: number) => Math.min(20, Math.max(5, Math.round(minutes / 25) * 5));
 
 function hm(day: number, v: string): number {
   const [h, m] = v.split(':').map(Number);
@@ -84,25 +90,34 @@ export function proposeDay(data: AppData, now = Date.now(), extra = 0): DayPlanI
     target -= b.durationMin;
   }
 
-  // 2) doporučení se simulací
+  // 1b) krátké opakování po dnešních přednáškách (dá se vypnout v Nastavení)
+  if (data.settings.lectureRecap !== false) {
+    for (const l of lecturesIn(data, day, addDays(day, 1))) {
+      if (l.end < now - HOUR) continue;
+      const subjectId = lectureSubject(data, l.timetableId, l.series);
+      if (!subjectId || sessions.some((s) => s.subjectId === subjectId && s.end > l.end)) continue;
+      items.push({ key: `recap-${l.key}`, subjectId, title: `Po přednášce: ${l.title}`, minutes: 15, start: 0, activity: 'recap', reasons: ['krátké shrnutí, dokud je látka čerstvá'], include: true, after: l.end });
+      target -= 15;
+    }
+  }
+
+  // 2) doporučení se simulací – plní se do cíle (i když už žádný předmět nemá kladné skóre)
   const extraMinutes = new Map<string, number>();
   const recentMinutes = new Map<string, number>();
   const coveredTopics = new Set<string>();
   for (const it of items) extraMinutes.set(it.subjectId, (extraMinutes.get(it.subjectId) ?? 0) + it.minutes);
   let lastSubject: string | null = null;
   let guard = 0;
-  while (target > 10 && guard++ < 8) {
-    const pool: Recommendation[] = recommend({ data, now, sim: { extraMinutes, recentMinutes, coveredTopics, lastSubject } }).filter((x) => x.subjectId);
-    const top = pool.find((x) => x.score > 0);
-    if (!top) break;
+  while (target > 10 && guard++ < 10) {
+    const pool: Recommendation[] = recommend({ data, now, sim: { extraMinutes, recentMinutes, coveredTopics, lastSubject } }).filter((x) => x.subjectId && x.activity !== 'recap');
+    if (!pool.length) break;
     // Prokládání: stejný předmět nikdy dvakrát po sobě, pokud existuje jiný aktivní předmět (i s nižší prioritou)
-    const r: Recommendation | undefined = top.subjectId !== lastSubject ? top : (pool.find((x) => x.subjectId !== lastSubject) ?? top);
-    if (!r || !r.subjectId) break;
+    const r: Recommendation = pool[0].subjectId !== lastSubject ? pool[0] : (pool.find((x) => x.subjectId !== lastSubject) ?? pool[0]);
     const minutes = Math.min(r.minutes, Math.max(25, Math.round(target / 5) * 5));
-    items.push({ key: `rec-${guard}-${r.key}`, subjectId: r.subjectId, title: r.title, minutes, start: 0, activity: r.activity, reasons: r.reasons.slice(0, 2), include: true });
-    extraMinutes.set(r.subjectId, (extraMinutes.get(r.subjectId) ?? 0) + minutes);
+    items.push({ key: `rec-${guard}-${r.key}`, subjectId: r.subjectId!, title: r.title, minutes, start: 0, activity: r.activity, reasons: r.reasons.slice(0, 2), include: true });
+    extraMinutes.set(r.subjectId!, (extraMinutes.get(r.subjectId!) ?? 0) + minutes);
     for (const [k, v] of recentMinutes) recentMinutes.set(k, v * 0.5); // čas běží – starší bloky váží méně
-    recentMinutes.set(r.subjectId, (recentMinutes.get(r.subjectId) ?? 0) + minutes);
+    recentMinutes.set(r.subjectId!, (recentMinutes.get(r.subjectId!) ?? 0) + minutes);
     for (const t of r.topics) coveredTopics.add(t.id);
     lastSubject = r.subjectId;
     target -= minutes;
@@ -112,33 +127,86 @@ export function proposeDay(data: AppData, now = Date.now(), extra = 0): DayPlanI
 }
 
 /**
- * Rozmístí položky do volných míst dne – v pořadí, v jakém je navrhl algoritmus (to je prokládané
- * podle priorit). Náročný blok se jen posune do tvé nejsilnější denní doby, pokud je ještě před tebou.
+ * Rozmístí položky do volných míst dne:
+ *  1. opakování po přednášce hned za hodinou (nejpozději do 3 h),
+ *  2. náročné bloky do nejsilnější doby (podle soustředění), pokud je ještě před tebou,
+ *  3. zbytek v pořadí návrhu do nejbližších volných míst – dopoledne tak nezůstane prázdné.
+ * Ve všech krocích: stejný předmět nikdy těsně za sebou (když jsou v plánu i jiné předměty)
+ * a pauza po bloku podle jeho délky.
  */
 export function place(data: AppData, items: DayPlanItem[], now = Date.now()): DayPlanItem[] {
   const { day, from, to } = dayBounds(data, now);
   const busy = busyIntervals(data, day, new Set(items.filter((i) => i.carry).map((i) => i.carry!.id)));
-  const peak = bestWindow(alive(data.sessions).filter((s) => s.start > now - 60 * DAY && s.mode !== 'anki'));
+  const peak = focusWindow(alive(data.sessions).filter((s) => s.start > now - 60 * DAY && s.mode !== 'anki'));
   const peakFrom = peak ? atMinutes(day, peak.from * 60) : null;
   const peakTo = peakFrom != null ? peakFrom + 2 * HOUR : null;
   const deep = (a: DayPlanItem['activity']) => a === 'exam' || a === 'new' || a === 'continue';
+  const varied = new Set(items.map((i) => i.subjectId)).size > 1;
 
-  const placed: DayPlanItem[] = [];
-  let cursor = from;
-  for (const it of items) {
-    let start: number | null = null;
-    if (peakFrom != null && peakTo != null && deep(it.activity) && peakTo > cursor) {
-      start = findSlot(busy, Math.max(cursor, peakFrom), Math.min(to, peakTo + it.minutes * MIN), it.minutes);
-    }
-    if (start == null) start = findSlot(busy, cursor, to, it.minutes);
-    if (start == null) {
-      placed.push({ ...it, start: 0, include: false });
-      continue;
-    }
-    busy.push([start, start + it.minutes * MIN]);
+  const placed: { it: DayPlanItem; start: number }[] = [];
+  const startOf = new Map<string, number>();
+
+  /** Stejný předmět nesmí být těsně za sebou (méně než hodinu mezi bloky). */
+  const APART = HOUR;
+  const neighboursOk = (subjectId: string, start: number, minutes: number) => {
+    if (!varied) return true;
+    const end = start + minutes * MIN;
+    const prev = placed.filter((p) => p.start < start).sort((a, b) => b.start - a.start)[0];
+    const next = placed.filter((p) => p.start > start).sort((a, b) => a.start - b.start)[0];
+    const prevOk = !prev || prev.it.subjectId !== subjectId || start - (prev.start + prev.it.minutes * MIN) >= APART;
+    const nextOk = !next || next.it.subjectId !== subjectId || next.start - end >= APART;
+    return prevOk && nextOk;
+  };
+  const commit = (it: DayPlanItem, start: number) => {
+    // pauza po bloku podle délky: findSlot počítá s GAP, intervalu proto přidáme rozdíl
+    busy.push([start, start + it.minutes * MIN + breakAfter(it.minutes) * MIN - GAP]);
     busy.sort((a, b) => a[0] - b[0]);
-    cursor = start + it.minutes * MIN;
-    placed.push({ ...it, start });
+    placed.push({ it, start });
+    startOf.set(it.key, start);
+  };
+  /** Nejdřívější volné místo v [lo, hi], které nekoliduje se sousedy. */
+  const slot = (it: DayPlanItem, lo: number, hi: number, strict = true): number | null => {
+    let t = lo;
+    for (let i = 0; i < 80; i++) {
+      const s = findSlot(busy, t, hi, it.minutes);
+      if (s == null) return null;
+      if (!strict || neighboursOk(it.subjectId, s, it.minutes)) return s;
+      t = s + 15 * MIN;
+    }
+    return null;
+  };
+
+  // 1) opakování po přednášce
+  for (const it of items.filter((i) => i.after != null)) {
+    const s = slot(it, Math.max(from, it.after!), Math.min(to, it.after! + 3 * HOUR + it.minutes * MIN), false);
+    if (s != null) commit(it, s);
   }
-  return placed.sort((a, b) => (a.start || Infinity) - (b.start || Infinity));
+  // 2) náročné bloky do nejsilnější doby
+  if (peakFrom != null && peakTo != null && peakTo > from)
+    for (const it of items.filter((i) => i.after == null && deep(i.activity))) {
+      const s = slot(it, Math.max(from, peakFrom), Math.min(to, peakTo + it.minutes * MIN));
+      if (s != null) commit(it, s);
+    }
+  // 3) zbytek: opakovaně vyber položku (v pořadí návrhu), která se vejde nejdřív
+  let rest = items.filter((i) => i.after == null && !startOf.has(i.key));
+  while (rest.length) {
+    let pick: { it: DayPlanItem; s: number } | null = null;
+    for (const it of rest) {
+      const s = slot(it, from, to);
+      if (s != null && (!pick || s < pick.s)) pick = { it, s };
+    }
+    // když nic nesplní střídání předmětů, vezmi aspoň první volné místo (lepší plán než žádný)
+    if (!pick)
+      for (const it of rest) {
+        const s = slot(it, from, to, false);
+        if (s != null && (!pick || s < pick.s)) pick = { it, s };
+      }
+    if (!pick) break;
+    commit(pick.it, pick.s);
+    rest = rest.filter((i) => i !== pick!.it);
+  }
+
+  return items
+    .map((it) => (startOf.has(it.key) ? { ...it, start: startOf.get(it.key)! } : { ...it, start: 0, include: false }))
+    .sort((a, b) => (a.start || Infinity) - (b.start || Infinity));
 }

@@ -2,15 +2,24 @@ import { useEffect, useMemo } from 'react';
 import { useStore } from '../../data/store';
 import { useToast } from '../../components/ui';
 import { navigate } from '../../lib/router';
-import { describe, evaluate } from './achievements';
+import { describe, evaluate, toPersist } from './achievements';
 
 const KEY = 'st.ach.seen';
 
-/** Hlídá nově odemčené úspěchy a krátce o nich dá vědět. Při prvním spuštění jen tiše uloží stav. */
+/**
+ * Hlídá nově odemčené úspěchy: uloží je natrvalo do dat (aby je pozdější změna cílů nevzala)
+ * a krátce o nich dá vědět. Při prvním spuštění na zařízení jen tiše uloží stav.
+ */
 export function AchievementWatcher() {
-  const { data } = useStore();
+  const { data, upsertMany } = useStore();
   const toast = useToast();
-  const ids = useMemo(() => evaluate(data).unlockedIds, [data]);
+  const res = useMemo(() => evaluate(data), [data]);
+  const ids = res.unlockedIds;
+
+  useEffect(() => {
+    const pending = toPersist(data, res);
+    if (pending.length) upsertMany('achievements', pending);
+  }, [data, res, upsertMany]);
 
   useEffect(() => {
     let seen: string[] | null = null;

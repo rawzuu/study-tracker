@@ -1,5 +1,5 @@
 import { PlanBlock, Session, Subject } from '../data/schema';
-import { avgFocus, byDay, byHour, bySubject, inRange, totalSec } from './stats';
+import { StreakRules, avgFocus, byDay, byHour, bySubject, inRange, streakDays, streakRuns, totalSec } from './stats';
 import { DAY, addDays, dayKey, fmtDuration, startOfDay, weekdayIdx } from './time';
 
 /**
@@ -44,7 +44,7 @@ const DAYPARTS = [
   { label: 'Noc', from: 22, to: 29 },
 ];
 
-export function periodStats(all: Session[], blocks: PlanBlock[], from: number, to: number): PeriodStats {
+export function periodStats(all: Session[], blocks: PlanBlock[], from: number, to: number, rules: StreakRules = {}): PeriodStats {
   const list = inRange(all, from, to);
   const now = Date.now();
   const effTo = Math.min(to, startOfDay(now) + DAY);
@@ -56,12 +56,9 @@ export function periodStats(all: Session[], blocks: PlanBlock[], from: number, t
   let bestDay: PeriodStats['bestDay'] = null;
   for (const [key, sec] of perDay) if (!bestDay || sec > bestDay.sec) bestDay = { key, sec };
 
-  let longestStreak = 0;
-  let run = 0;
-  for (let t = from; t < effTo; t = addDays(t, 1)) {
-    run = perDay.has(dayKey(t)) ? run + 1 : 0;
-    longestStreak = Math.max(longestStreak, run);
-  }
+  // série v rámci období – stejná pravidla jako na přehledu (dny volna, minimum minut)
+  const sDays = streakDays(list, rules.minMin ?? 0);
+  const longestStreak = effTo > from ? Math.max(0, ...streakRuns(sDays, from, effTo - 1, rules.restDays ?? 0).map((r) => r.run)) : 0;
 
   // průměr na den v týdnu = součet / počet takových dní v období
   const wdTotals = new Array(7).fill(0);

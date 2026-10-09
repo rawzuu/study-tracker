@@ -14,6 +14,7 @@ const ACTIVITY_LABEL: Record<Recommendation['activity'], string> = {
   continue: 'pokračování',
   anki: 'kartičky',
   plan: 'podle plánu',
+  recap: 'po přednášce',
 };
 
 const SIGNALS: { k: keyof Recommendation['signals']; label: string; hint: string }[] = [

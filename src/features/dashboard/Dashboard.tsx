@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, BookOpen, CalendarDays, CalendarRange, Check, FileText, GraduationCap, NotebookPen, Play, Sunrise, Target, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BookOpen, CalendarDays, CalendarRange, Check, FileText, GraduationCap, NotebookPen, Play, Sunrise, Target, X } from 'lucide-react';
 import { useStore } from '../../data/store';
+import { loadGithubConfig, tokenDaysLeft } from '../../data/github';
 import { alive } from '../../data/schema';
 import { Bar, Empty } from '../../components/ui';
 import { Chart, chartColors, useTheme } from '../../components/Chart';
@@ -68,7 +69,7 @@ export function Dashboard() {
   // Minulý týden do stejného okamžiku – férové srovnání.
   const lastWeekSec = totalSec(inRange(sessions, addDays(week, -7), now - 7 * DAY));
   const delta = lastWeekSec ? (weekSec - lastWeekSec) / lastWeekSec : null;
-  const { current, best } = streaks(sessions);
+  const { current, best } = streaks(sessions, { restDays: data.settings.streakRestDays, minMin: data.settings.streakMinMin }, now);
   const focus7 = avgFocus(inRange(sessions, addDays(today, -6), now + 1));
   const goal = data.settings.dailyGoalMin * 60;
 
@@ -121,7 +122,13 @@ export function Dashboard() {
 
   const [planOpen, setPlanOpen] = useState(false);
   const [morningDismissed, dismissMorning] = useDismiss(`st.dismiss.morning.${dayKey(now)}`);
-  const showMorning = !morningDismissed && new Date(now).getHours() >= 5 && new Date(now).getHours() < 13 && todayBlocks.length === 0 && alive(data.subjects).length > 0;
+  const showMorning = data.settings.morningPrompt !== false && !morningDismissed && new Date(now).getHours() >= 5 && new Date(now).getHours() < 13 && todayBlocks.length === 0 && alive(data.subjects).length > 0;
+  // Záloha na GitHub: upozornit jen na skutečný problém (neplatný/prošlý token, chybí přístup), ne na výpadek internetu
+  const { sync } = useStore();
+  const tokenDays = tokenDaysLeft(loadGithubConfig(), now);
+  const [syncDismissed, dismissSync] = useDismiss(`st.dismiss.sync.${dayKey(now)}`);
+  const syncBroken = sync.status === 'error' && (sync.code === 401 || sync.code === 403 || sync.code === 404);
+  const showSync = data.settings.tokenWarning !== false && !syncDismissed && (syncBroken || (sync.status !== 'off' && tokenDays != null && tokenDays <= 7));
   const showAnki = data.settings.anki.enabled || data.anki.some((a) => a.id === 'snapshot' && !a.deletedAt);
 
   const startTopic = (subjectId: string, topic: string, planBlockId?: string) => {
@@ -143,8 +150,26 @@ export function Dashboard() {
         )}
       </div>
 
-      {(showReflection || showReport || thisWeekReflection || showMorning) && (
+      {(showReflection || showReport || thisWeekReflection || showMorning || showSync) && (
         <div className="stack tight">
+          {showSync && (
+            <div className="banner">
+              <AlertTriangle size={16} />
+              <span className="grow">
+                {syncBroken
+                  ? `Záloha na GitHub teď nefunguje: ${sync.status === 'error' ? sync.message : ''} Data jsou zatím jen v tomto prohlížeči.`
+                  : tokenDays! <= 0
+                    ? 'Token pro zálohu na GitHub vypršel – vytvoř nový, ať se záloha nezastaví.'
+                    : `Token pro zálohu na GitHub vyprší za ${tokenDays} ${plural(tokenDays!, 'den', 'dny', 'dní')} – vytvoř nový, ať se záloha nezastaví.`}
+              </span>
+              <a className="btn sm" href="#/nastaveni">
+                Nastavení <ArrowRight size={13} />
+              </a>
+              <button className="btn ghost icon sm" onClick={dismissSync} aria-label="Skrýt">
+                <X size={14} />
+              </button>
+            </div>
+          )}
           {showMorning && (
             <div className="banner">
               <Sunrise size={16} />

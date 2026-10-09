@@ -14,10 +14,11 @@ import {
   Trophy,
 } from 'lucide-react';
 import { useStore } from './data/store';
+import { loadGithubConfig, tokenDaysLeft } from './data/github';
 import { alive } from './data/schema';
 import { useRoute } from './lib/router';
 import { useApplyTheme } from './lib/theme';
-import { addDays, fmtClock, fmtTime, startOfDay } from './lib/time';
+import { addDays, fmtClock, fmtTime, plural, startOfDay } from './lib/time';
 import { setNoiseVolume, startNoise, stopNoise } from './lib/noise';
 import { ThemeContext } from './components/Chart';
 import { useTimer } from './features/timer/TimerContext';
@@ -36,6 +37,7 @@ import { SubjectsPage } from './features/subjects/SubjectsPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { useAnkiSync } from './features/anki/useAnkiSync';
+import { useTimerDeepLink } from './features/timer/deepLink';
 import { AchievementsPage } from './features/achievements/AchievementsPage';
 import { AchievementWatcher } from './features/achievements/AchievementWatcher';
 
@@ -116,7 +118,15 @@ function MorePage() {
 }
 
 function SyncBadge() {
-  const { sync, syncNow } = useStore();
+  const { sync, syncNow, data } = useStore();
+  const days = tokenDaysLeft(loadGithubConfig());
+  if (data.settings.tokenWarning !== false && sync.status !== 'off' && sync.status !== 'error' && days != null && days <= 14) {
+    return (
+      <a href="#/nastaveni" className="sync-badge warn" title="Vytvoř na GitHubu nový token a vlož ho v Nastavení">
+        <span className="led" /> {days <= 0 ? 'token vypršel' : `token vyprší za ${days} ${plural(days, 'den', 'dny', 'dní')}`}
+      </a>
+    );
+  }
   if (sync.status === 'off') {
     return (
       <a href="#/nastaveni" className="sync-badge warn">
@@ -184,6 +194,7 @@ export function App() {
   const Page = page.component;
   useCalendarFeedSync(data);
   useAnkiSync();
+  useTimerDeepLink();
   // O průvodci se rozhoduje jen jednou při startu – jinak by zmizel hned po přidání prvního předmětu.
   const [showOnboarding] = useState(() => alive(data.subjects).length === 0 && alive(data.sessions).length === 0);
 

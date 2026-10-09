@@ -34,7 +34,7 @@ export function SessionModal({ session, initialStart, onClose }: { session?: Ses
     const tName = topic.trim();
     if (!session && tName) {
       const base = findTopic(data.topics, subjectId, tName) ?? newTopic(subjectId, tName);
-      const next = applyStudy(base, s + minutes * 60_000, 'ok', ctxFrom(data));
+      const next = applyStudy(base, s + minutes * 60_000, 'ok', ctxFrom(data), { auto: true });
       upsert('topics', next);
       topicId = next.id;
     }

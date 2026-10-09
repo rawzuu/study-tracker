@@ -1,7 +1,8 @@
 import { AppData, Session, Subject, Topic, alive } from '../data/schema';
 import { ctxFrom, isDue, retrievability } from '../features/topics/schedule';
 import { avgFocus } from './stats';
-import { DAY, HOUR, MIN, parseDayKey, startOfDay, startOfWeek } from './time';
+import { lectureSubject, lecturesIn } from './timetable';
+import { DAY, HOUR, MIN, addDays, minutesOfDay, parseDayKey, startOfDay, startOfWeek, weekdayIdx } from './time';
 
 /**
  * „Co se mám teď učit?“ – doporučovací algoritmus.
@@ -30,7 +31,7 @@ import { DAY, HOUR, MIN, parseDayKey, startOfDay, startOfWeek } from './time';
 
 export const W = { E: 0.3, R: 0.25, G: 0.2, N: 0.1, P: 0.15, X: 0.35 };
 
-export type Activity = 'review' | 'exam' | 'new' | 'continue' | 'anki' | 'plan';
+export type Activity = 'review' | 'exam' | 'new' | 'continue' | 'anki' | 'plan' | 'recap';
 
 export interface Recommendation {
   key: string;
@@ -60,6 +61,25 @@ function pluralDays(n: number) {
   return n === 1 ? 'den' : n >= 2 && n <= 4 ? 'dny' : 'dní';
 }
 
+/**
+ * Jaká část týdenní práce bývá hotová do tohoto okamžiku týdne – podle tvých posledních 8 týdnů
+ * (kdo se učí hlavně o víkendu, toho ve středu týdenní cíl ještě netlačí). Bez dostatku dat
+ * rovnoměrně přes 7 dní. Osobní tempo se mírně „přitahuje“ k rovnoměrnému, aby nebylo extrémní.
+ */
+export function weekShare(sessions: Session[], now: number): number {
+  const weekStart = startOfWeek(now);
+  const uniform = Math.max(clamp((now - weekStart) / (7 * DAY)), 1 / 7);
+  const from = addDays(weekStart, -56);
+  const hist = sessions.filter((s) => s.start >= from && s.start < weekStart && s.mode !== 'anki');
+  const weeks = new Set(hist.map((s) => startOfWeek(s.start))).size;
+  const total = hist.reduce((a, s) => a + s.durationSec, 0);
+  if (weeks < 3 || total < 5 * 3600) return uniform;
+  const pos = (t: number) => weekdayIdx(t) * 1440 + minutesOfDay(t);
+  const nowPos = pos(now);
+  const before = hist.filter((s) => pos(s.start) < nowPos).reduce((a, s) => a + s.durationSec, 0);
+  return Math.max(0.75 * (before / total) + 0.25 * clamp((now - weekStart) / (7 * DAY)), 1 / 14);
+}
+
 /** Doporučená délka bloku podle tvých dat: v jaké délce bloků máš v tuto denní dobu nejlepší soustředění. */
 export function personalBlock(sessions: Session[], now: number, activity: Activity): { minutes: number; modeId: string; note?: string } {
   const h = new Date(now).getHours();
@@ -70,13 +90,18 @@ export function personalBlock(sessions: Session[], now: number, activity: Activi
     { max: 70, minutes: 50, modeId: 'pomodoro-long' },
     { max: Infinity, minutes: 90, modeId: 'ultradian' },
   ];
+  // Průměr soustředění v každé délce „přitažený“ k celkovému průměru (K = 3 bloky) – pár výjimečných
+  // bloků tak nerozhodne. Delší blok vyhraje jen se zřetelně lepším soustředěním (+0,15).
+  const g = avgFocus(rated) ?? 3;
+  const K = 3;
   let best: (typeof buckets)[number] | null = null;
   let bestF = 0;
   for (const b of buckets) {
     const lo = b === buckets[0] ? 0 : buckets[buckets.indexOf(b) - 1].max;
     const list = rated.filter((s) => s.durationSec / 60 > lo && s.durationSec / 60 <= b.max);
-    const f = avgFocus(list);
-    if (list.length >= 3 && f != null && f > bestF + 0.15) {
+    if (list.length < 3) continue;
+    const f = (list.reduce((a, s) => a + (s.focus ?? 0), 0) + K * g) / (list.length + K);
+    if (f > bestF + 0.15) {
       best = b;
       bestF = f;
     }
@@ -105,7 +130,7 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
   const ctx = ctxFrom(data);
   const today = startOfDay(now);
   const weekStart = startOfWeek(now);
-  const weekFrac = clamp((now - weekStart) / (7 * DAY));
+  const share = weekShare(sessions, now); // kolik týdenního cíle „by mělo“ být hotovo touto dobou
   // Pomocný předmět „Anki“ (nepřiřazené balíčky) se doporučuje zvlášť jako kartičky
   const subjects = alive(data.subjects).filter((s) => !s.archived && s.id !== 'anki');
   const topics = alive(data.topics);
@@ -143,7 +168,7 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
     // G – týdenní cíl
     const doneWeek = sSessions.filter((s) => s.start >= weekStart).reduce((a, s) => a + s.durationSec / 60, 0) + (sim?.extraMinutes?.get(subj.id) ?? 0);
     const goal = subj.weeklyGoalMin;
-    const G = goal > 0 ? clamp((goal * Math.max(weekFrac, 1 / 7) - doneWeek) / goal) : 0;
+    const G = goal > 0 ? clamp((goal * share - doneWeek) / goal) : 0;
 
     // N – zanedbání
     const daysSince = lastStudied ? (now - lastStudied) / DAY : 30;
@@ -217,7 +242,7 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
       const late = dueTopics.filter(({ t }) => (t.nextReviewAt ?? now) < today).length;
       reasons.push([W.R * R, `${dueTopics.length} ${dueTopics.length === 1 ? 'téma' : dueTopics.length < 5 ? 'témata' : 'témat'} k opakování${late ? ` (${late} po termínu)` : ''} · vybavitelnost ${Math.round(dueTopics[0].r * 100)} %`]);
     }
-    if (G > 0.05) reasons.push([W.G * G, `${Math.round(goal * Math.max(weekFrac, 1 / 7) - doneWeek)} min pod týdenním plánem`]);
+    if (G > 0.05) reasons.push([W.G * G, `${Math.round(goal * share - doneWeek)} min pod týdenním plánem`]);
     if (N > 0.4 && lastStudied) reasons.push([W.N * N, `${Math.floor(daysSince)} ${pluralDays(Math.floor(daysSince))} bez učení`]);
     if (P > 0) reasons.push([W.P * P, P >= 1 ? 'naplánováno na teď' : P > 0.5 ? 'dnes naplánováno a zatím neodučeno' : 'naplánováno později dnes']);
     if (X > 0.3) reasons.push([-W.X * X, 'nedávno na řadě – vhodné prostřídat']);
@@ -236,6 +261,29 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
       reasons: reasons.sort((a, b) => b[0] - a[0]).map((r) => r[1]),
       planBlockId: activity === 'plan' ? planBlock?.id : undefined,
     });
+  }
+
+  // Opakování po přednášce (volitelné): krátké shrnutí ještě ten den, dokud je látka čerstvá.
+  if (!sim && data.settings.lectureRecap !== false) {
+    for (const l of lecturesIn(data, today, now)) {
+      const hoursAgo = (now - l.end) / HOUR;
+      if (l.end > now || hoursAgo > 8) continue;
+      const subjectId = lectureSubject(data, l.timetableId, l.series);
+      if (!subjectId || sessions.some((s) => s.subjectId === subjectId && s.end > l.end)) continue;
+      out.push({
+        key: `recap:${l.key}`,
+        subjectId,
+        activity: 'recap',
+        title: `Po přednášce: ${l.title}`,
+        topic: '',
+        topics: [],
+        minutes: 15,
+        modeId: 'stopwatch',
+        score: 0.15 + 0.35 * clamp(1 - hoursAgo / 8),
+        signals: { E: 0, R: 0, G: 0, N: 0, P: 0, X: 0 },
+        reasons: [hoursAgo < 1 ? 'přednáška právě skončila' : `přednáška skončila před ${Math.floor(hoursAgo)} h`, 'krátké shrnutí, dokud je látka čerstvá'],
+      });
+    }
   }
 
   // Anki – lehká činnost, hodí se hlavně v „slabší“ denní době nebo mezi bloky

@@ -38,12 +38,13 @@ export function ReportPage() {
   const theme = useTheme();
   const [{ y, m }, setYm] = useState(defaultReportMonth);
   const sessions = useMemo(() => alive(data.sessions), [data.sessions]);
+  const rules = useMemo(() => ({ restDays: data.settings.streakRestDays, minMin: data.settings.streakMinMin }), [data.settings.streakRestDays, data.settings.streakMinMin]);
   const subjById = useMemo(() => new Map(data.subjects.map((s) => [s.id, s])), [data.subjects]);
 
   const { from, to } = monthRange(y, m);
   const prevRange = monthRange(m === 0 ? y - 1 : y, m === 0 ? 11 : m - 1);
-  const cur = useMemo(() => periodStats(sessions, data.planBlocks, from, to), [sessions, data.planBlocks, from, to]);
-  const prev = useMemo(() => periodStats(sessions, data.planBlocks, prevRange.from, prevRange.to), [sessions, data.planBlocks, prevRange.from, prevRange.to]);
+  const cur = useMemo(() => periodStats(sessions, data.planBlocks, from, to, rules), [sessions, data.planBlocks, from, to, rules]);
+  const prev = useMemo(() => periodStats(sessions, data.planBlocks, prevRange.from, prevRange.to, rules), [sessions, data.planBlocks, prevRange.from, prevRange.to, rules]);
   const notes = highlights(cur, prev, data.subjects);
   const now = new Date();
   const isFuture = from > now.getTime();

@@ -31,8 +31,9 @@ export function ReflectionPage() {
   const from = parseDayKey(week).getTime();
   const to = addDays(from, 7);
   const sessions = useMemo(() => alive(data.sessions), [data.sessions]);
-  const cur = useMemo(() => periodStats(sessions, data.planBlocks, from, to), [sessions, data.planBlocks, from, to]);
-  const prev = useMemo(() => periodStats(sessions, data.planBlocks, addDays(from, -7), from), [sessions, data.planBlocks, from]);
+  const rules = useMemo(() => ({ restDays: data.settings.streakRestDays, minMin: data.settings.streakMinMin }), [data.settings.streakRestDays, data.settings.streakMinMin]);
+  const cur = useMemo(() => periodStats(sessions, data.planBlocks, from, to, rules), [sessions, data.planBlocks, from, to, rules]);
+  const prev = useMemo(() => periodStats(sessions, data.planBlocks, addDays(from, -7), from, rules), [sessions, data.planBlocks, from, rules]);
   const existing = data.reflections.find((r) => !r.deletedAt && r.weekStart === week);
 
   const [rating, setRating] = useState(existing?.rating ?? 0);

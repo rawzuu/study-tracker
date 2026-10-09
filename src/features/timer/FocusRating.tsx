@@ -44,7 +44,8 @@ export function AfterBlockModal() {
     });
     // Plán opakování: při uložení sezení se počítalo s „Dobře“, tady ho případně opravíme.
     const snap = topicSnapshots.get(session.id);
-    if (topic && snap && difficulty && difficulty !== 'ok') {
+    // i výslovné „Dobře“ se přepočítá – v historii se pak hodnocení nebere jako automatické
+    if (topic && snap && difficulty) {
       upsert('topics', { ...applyStudy(snap, session.end, difficulty, ctxFrom(data)), id: topic.id, createdAt: topic.createdAt });
     }
     close();

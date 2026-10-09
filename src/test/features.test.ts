@@ -6,7 +6,7 @@ import { restoreEntity, trashItems } from '../lib/trash';
 import { calibrate, pendingSuggestions } from '../lib/calibrate';
 import { mergeData } from '../data/merge';
 import { Session, Timetable } from '../data/schema';
-import { D, H, M, NOW, TODAY, block, data, exam, session, subject } from './helpers';
+import { D, H, M, NOW, TODAY, block, data, exam, session, subject, topic } from './helpers';
 
 const ics = (...events: string[]) => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'X-WR-CALNAME:Rozvrh ZS', ...events, 'END:VCALENDAR'].join('\r\n');
 const local = (t: number) => {
@@ -237,5 +237,106 @@ describe('skrytí Reflexe', () => {
     const hidden = evaluate(data({ reflections: [refl], settings: { ...data().settings, hiddenPages: ['reflexe'] } }), NOW);
     expect(hidden.unlockedIds.some((id) => id.startsWith('reflection') || id === 'first-reflection')).toBe(false);
     expect(hidden.total).toBe(shown.total - 6); // 5 úrovní + 1 jednorázový
+  });
+});
+
+describe('úpravy algoritmů (audit 9. 10.)', () => {
+  const day = new Date(2026, 9, 7).getTime(); // středa
+  const histAfternoon = (n = 30) =>
+    Array.from({ length: n }, (_, i) => session({ id: `p${i}`, subjectId: i % 2 ? 'a' : 'b', start: day - (i + 1) * D + 15 * H, durationSec: 90 * 60, end: day - (i + 1) * D + 16.5 * H }));
+  const twoSubjects = [subject({ id: 'a', name: 'A', weeklyGoalMin: 300 }), subject({ id: 'b', name: 'B', weeklyGoalMin: 300 })];
+
+  it('ranní plán naplní cíl a nenechá dopoledne prázdné', async () => {
+    const { proposeDay } = await import('../lib/dayplan');
+    const d = data({ subjects: twoSubjects, sessions: histAfternoon(), settings: { ...data().settings, dailyGoalMin: 240 } });
+    const plan = proposeDay(d, day + 8 * H).filter((i) => i.include);
+    const total = plan.reduce((a, i) => a + i.minutes, 0);
+    expect(total).toBeGreaterThanOrEqual(230); // dřív jen 100 min ze 240
+    expect(plan.some((i) => i.start < day + 12 * H)).toBe(true); // dřív vše až od 15:00
+    const sorted = [...plan].sort((x, y) => x.start - y.start);
+    for (let k = 1; k < sorted.length; k++) {
+      // stejný předmět nikdy těsně za sebou (méně než hodinu mezi bloky)
+      if (sorted[k].subjectId === sorted[k - 1].subjectId) expect(sorted[k].start - (sorted[k - 1].start + sorted[k - 1].minutes * M)).toBeGreaterThanOrEqual(H);
+      // pauza po bloku podle jeho délky
+      const { breakAfter } = await import('../lib/dayplan');
+      expect(sorted[k].start).toBeGreaterThanOrEqual(sorted[k - 1].start + (sorted[k - 1].minutes + breakAfter(sorted[k - 1].minutes)) * M);
+    }
+  });
+
+  it('nejsilnější doba podle soustředění, ne podle množství', async () => {
+    const { focusWindow, bestWindow } = await import('../lib/stats');
+    const lots = Array.from({ length: 20 }, (_, i) => session({ id: `l${i}`, start: day - (i + 1) * D + 20 * H, durationSec: 120 * 60, end: day - (i + 1) * D + 22 * H, focus: 2 }));
+    const good = Array.from({ length: 12 }, (_, i) => session({ id: `g${i}`, start: day - (i + 1) * D + 9 * H, durationSec: 60 * 60, end: day - (i + 1) * D + 10 * H, focus: 5 }));
+    expect(bestWindow([...lots, ...good])!.from).toBe(20);
+    expect(focusWindow([...lots, ...good])!.from).toBe(8);
+  });
+
+  it('týdenní tempo podle vlastních dnů (kdo se učí o víkendu, toho ve středu cíl netlačí)', async () => {
+    const { weekShare } = await import('../lib/recommend');
+    const weekend = Array.from({ length: 8 }, (_, w) => [5, 6].map((dd) => session({ id: `w${w}${dd}`, start: day - 2 * D - w * 7 * D + dd * D + 10 * H, durationSec: 3 * 3600 }))).flat();
+    expect(weekShare([], day + 12 * H)).toBeCloseTo((2.5 / 7), 1);
+    expect(weekShare(weekend, day + 12 * H)).toBeLessThan(0.15);
+  });
+
+  it('série: den volna týdně a minimum minut', async () => {
+    const { streaks } = await import('../lib/stats');
+    const at = (dd: number, min: number) => session({ id: `s${dd}-${min}`, start: day - dd * D + 10 * H, durationSec: min * 60 });
+    const list = [at(5, 30), at(4, 30), /* 3: volno */ at(2, 30), at(1, 30), at(0, 5)];
+    expect(streaks(list, {}, day + 20 * H).current).toBe(3);
+    expect(streaks(list, { restDays: 1 }, day + 20 * H).current).toBe(5);
+    expect(streaks(list, { restDays: 1, minMin: 10 }, day + 20 * H).current).toBe(4); // dnešních 5 min se nepočítá, dnešek sérii nepřeruší
+  });
+
+  it('jednou získaný úspěch zůstane i po zvýšení cíle', async () => {
+    const { evaluate, toPersist } = await import('../features/achievements/achievements');
+    const sessions = Array.from({ length: 10 }, (_, i) => session({ id: `g${i}`, start: new Date(2026, 8, 1 + i, 10).getTime(), durationSec: 90 * 60 }));
+    const low = data({ sessions, settings: { ...data().settings, dailyGoalMin: 60 } });
+    const res = evaluate(low, NOW);
+    const persisted = toPersist(low, res, NOW).map((p) => ({ ...p, createdAt: 1, updatedAt: 1 }));
+    expect(persisted.map((p) => p.id)).toContain('daily-goal.2');
+    const high = data({ sessions, achievements: persisted, settings: { ...data().settings, dailyGoalMin: 180 } });
+    const r2 = evaluate(high, NOW);
+    expect(r2.unlockedIds).toContain('daily-goal.2');
+    expect(toPersist(high, r2, NOW)).toEqual([]);
+  });
+
+  it('historie opakování FSRS se ukládá a pozná automatické hodnocení', async () => {
+    const { applyStudy, ctxFrom } = await import('../features/topics/schedule');
+    const ctx = ctxFrom(data());
+    let t = applyStudy(topic(), NOW - 10 * D, 'ok', ctx, { auto: true });
+    t = applyStudy(t, NOW, 'hard', ctx);
+    expect(t.log).toEqual([
+      { at: NOW - 10 * D, rating: 3, auto: true },
+      { at: NOW, rating: 2 },
+    ]);
+  });
+
+  it('opakování po přednášce: v „Co teď?“ i v ranním plánu, dá se vypnout', async () => {
+    const { recommend } = await import('../lib/recommend');
+    const { proposeDay } = await import('../lib/dayplan');
+    const lect = { key: 'Matematika I – přednáška|x', series: 'Matematika I – přednáška', title: 'Matematika I – přednáška', location: '', start: day + 9 * H, end: day + 10.5 * H };
+    const tt = { id: 'tt', name: 'Rozvrh', importedAt: 1, events: [lect], hiddenSeries: [], skipped: [], createdAt: 1, updatedAt: 1 };
+    const subs = [subject({ id: 'm', name: 'Matematika' }), subject({ id: 'n', name: 'Němčina', weeklyGoalMin: 120 })];
+    const d = data({ subjects: subs, timetables: [tt] });
+    const top = recommend({ data: d, now: day + 11 * H })[0];
+    expect(top.activity).toBe('recap');
+    expect(top.subjectId).toBe('m');
+    const plan = proposeDay(d, day + 8 * H);
+    const recap = plan.find((i) => i.activity === 'recap')!;
+    expect(recap.start).toBe(day + 10.5 * H + 10 * M); // hned po přednášce (+ pauza)
+    const off = data({ subjects: subs, timetables: [tt], settings: { ...data().settings, lectureRecap: false } });
+    expect(recommend({ data: off, now: day + 11 * H }).some((r) => r.activity === 'recap')).toBe(false);
+    expect(proposeDay(off, day + 8 * H).some((i) => i.activity === 'recap')).toBe(false);
+  });
+});
+
+describe('hlídání tokenu', () => {
+  it('počet dní do konce platnosti', async () => {
+    const { tokenDaysLeft } = await import('../data/github');
+    const cfg = { owner: 'o', repo: 'r', branch: 'main', path: 'data.json', token: 't' };
+    expect(tokenDaysLeft(cfg, NOW)).toBe(null);
+    expect(tokenDaysLeft({ ...cfg, expires: '2026-10-14' }, NOW)).toBe(7);
+    expect(tokenDaysLeft({ ...cfg, expires: '2026-10-07' }, NOW)).toBe(0);
+    expect(tokenDaysLeft({ ...cfg, expires: 'nesmysl' }, NOW)).toBe(null);
   });
 });

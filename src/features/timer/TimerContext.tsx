@@ -136,7 +136,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       if (topicName) {
         const base = findTopic(d.topics, s.subjectId, topicName) ?? newTopic(s.subjectId, topicName);
         topicSnapshots.set(id, base);
-        const next = applyStudy(base, endAt, 'ok', ctxFrom(d));
+        const next = applyStudy(base, endAt, 'ok', ctxFrom(d), { auto: true });
         upsert('topics', next);
         topicId = next.id;
       }

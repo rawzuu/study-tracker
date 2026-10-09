@@ -482,3 +482,10 @@
     display: none;
   }
 }
+.tt-subject {
+  width: 180px;
+  max-width: 45%;
+  height: 30px;
+  font-size: 12.5px;
+  padding: 0 8px;
+}

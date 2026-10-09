@@ -103,8 +103,15 @@ function nextExamStart(exams: Exam[], subjectId: string, after: number): number 
   return best;
 }
 
-/** Vrátí téma po opakování s daným hodnocením. Nemutuje vstup. */
-export function applyStudy(t: Topic, at: number, rating: RecallRating, ctx: ScheduleCtx): Topic {
+const RATING_NUM = { again: 1, hard: 2, ok: 3, easy: 4 } as const;
+const LOG_MAX = 200;
+
+/**
+ * Vrátí téma po opakování s daným hodnocením. Nemutuje vstup.
+ * Každé opakování se zapíše do historie (`log`) – z ní půjde později přizpůsobit FSRS tvé paměti.
+ * `auto` = hodnocení doplnila aplikace (blok z časovače bez ohodnocení), ne uživatel.
+ */
+export function applyStudy(t: Topic, at: number, rating: RecallRating, ctx: ScheduleCtx, opts: { auto?: boolean } = {}): Topic {
   const f = scheduler(ctx.retention, ctx.maxDays);
   const { card } = f.next(toCard(t), new Date(at), GRADE[rating]);
   let due = card.due.getTime();
@@ -126,6 +133,7 @@ export function applyStudy(t: Topic, at: number, rating: RecallRating, ctx: Sche
     lastStudiedAt: at,
     nextReviewAt: due,
     reviews: t.reviews + 1,
+    log: [...(t.log ?? []), { at, rating: RATING_NUM[rating], ...(opts.auto ? { auto: true } : {}) }].slice(-LOG_MAX),
     fsrs: {
       s: card.stability,
       d: card.difficulty,
