@@ -99,9 +99,11 @@ export function SettingsPage() {
         <Row label="Vybavení po bloku" desc="Po bloku vyzve k sepsání hlavních bodů z hlavy (retrieval practice). Jde vždy přeskočit.">
           <Switch checked={s.askRecall} onChange={(v) => setSettings({ askRecall: v })} />
         </Row>
-        <Row label="Připomínat týdenní reflexi" desc="Na začátku týdne se na přehledu objeví výzva k reflexi minulého týdne.">
-          <Switch checked={s.weeklyReflection} onChange={(v) => setSettings({ weeklyReflection: v })} />
-        </Row>
+        {!(s.hiddenPages ?? []).includes('reflexe') && (
+          <Row label="Připomínat týdenní reflexi" desc="Na začátku týdne se na přehledu objeví výzva k reflexi minulého týdne.">
+            <Switch checked={s.weeklyReflection} onChange={(v) => setSettings({ weeklyReflection: v })} />
+          </Row>
+        )}
         <Row label="Zvuk">
           <div className="row">
             {s.sound && (
@@ -185,9 +187,38 @@ export function SettingsPage() {
           Data se ukládají v prohlížeči (IndexedDB) a synchronizují do tvého soukromého GitHub repa. Při aktualizaci aplikace se
           automaticky převedou na novou verzi a před převodem se uloží záloha.
         </p>
+        <MenuOptions />
       </div>
       </div>
     </div>
+  );
+}
+
+// ============================================================
+// Méně používané stránky jde skrýt z nabídky (data zůstanou)
+// ============================================================
+const OPTIONAL_PAGES = [{ id: 'reflexe', label: 'Reflexe', desc: 'týdenní reflexe, připomínka na přehledu a její úspěchy' }];
+
+function MenuOptions() {
+  const { data, setSettings } = useStore();
+  const hidden = data.settings.hiddenPages ?? [];
+  const toggle = (id: string, show: boolean) => setSettings({ hiddenPages: show ? hidden.filter((x) => x !== id) : [...hidden, id] });
+  return (
+    <details className="menu-options">
+      <summary className="small faint">Přizpůsobit nabídku</summary>
+      <div className="stack tight" style={{ marginTop: 10 }}>
+        {OPTIONAL_PAGES.map((p) => (
+          <div key={p.id} className="row between">
+            <div>
+              <div className="small">{p.label}</div>
+              <div className="small faint">{p.desc}</div>
+            </div>
+            <Switch checked={!hidden.includes(p.id)} onChange={(v) => toggle(p.id, v)} label={`Zobrazovat ${p.label}`} />
+          </div>
+        ))}
+        <span className="small faint">Skrytím se nic nesmaže – po opětovném zapnutí je vše zpátky.</span>
+      </div>
+    </details>
   );
 }
 

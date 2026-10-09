@@ -79,12 +79,14 @@ function useDueCount(): number {
 
 function NavLinks({ current }: { current: string }) {
   const due = useDueCount();
+  const { data } = useStore();
+  const hidden = new Set(data.settings.hiddenPages ?? []);
   return (
     <nav className="nav">
       {GROUPS.map((g) => (
         <div key={g}>
           <div className="nav-group label">{g}</div>
-          {PAGES.filter((p) => p.group === g).map((p) => (
+          {PAGES.filter((p) => p.group === g && !hidden.has(p.id)).map((p) => (
             <a key={p.id} href={`#/${p.id}`} className={p.id === current ? 'active' : ''}>
               <p.icon size={16} strokeWidth={1.75} /> {p.label}
               {p.id === 'opakovani' && due > 0 && <span className="badge">{due}</span>}

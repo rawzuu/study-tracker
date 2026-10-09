@@ -185,6 +185,8 @@ export interface Settings {
   planDayEnd: string; // HH:MM
   // v2.3+
   calibration: CalibrationEntry[];
+  // v2.4+
+  hiddenPages: string[]; // stránky skryté z nabídky (např. 'reflexe')
 }
 
 export interface AppData {
@@ -243,6 +245,7 @@ export function defaultSettings(): Settings {
     planDayStart: '08:00',
     planDayEnd: '22:00',
     calibration: [],
+    hiddenPages: [],
   };
 }
 

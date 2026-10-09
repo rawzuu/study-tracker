@@ -1,118 +1,409 @@
-.emblem {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  flex-shrink: 0;
+/* ============================================================
+   Úspěchy – medaile a vitrína
+   ============================================================ */
+:root,
+:root[data-theme='dark'] {
+  --medal-lock-hi: #3a3a3a;
+  --medal-lock-lo: #1c1c1c;
+  --medal-lock-face-hi: #2c2c2c;
+  --medal-lock-face-lo: #171717;
+  --medal-lock-groove: #121212;
+  --medal-lock-ribbon: #151515;
+  --medal-shadow: rgba(0, 0, 0, 0.55);
 }
-.emblem svg {
-  position: absolute;
-  inset: 0;
-}
-.emblem-icon {
-  position: relative;
-  color: var(--text-3);
-  display: grid;
-  place-items: center;
-  margin-top: -2px;
-}
-.emblem.on .emblem-icon {
-  color: var(--m);
-}
-.emblem-tier {
-  position: absolute;
-  bottom: -3px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0 4px;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--m);
-  background: var(--panel);
-  border: 1px solid var(--m);
-  border-radius: 3px;
-  line-height: 13px;
+:root[data-theme='light'] {
+  --medal-lock-hi: #e6e6e2;
+  --medal-lock-lo: #c9c9c4;
+  --medal-lock-face-hi: #f1f1ee;
+  --medal-lock-face-lo: #d8d8d3;
+  --medal-lock-groove: #bdbdb7;
+  --medal-lock-ribbon: #e9e9e5;
+  --medal-shadow: rgba(60, 50, 30, 0.28);
 }
 
-.ach-row {
+/* ---------- medaile ---------- */
+.medal {
+  --rx: 0deg;
+  --ry: 0deg;
+  --sx: -85px;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  perspective: 600px;
+}
+.medal-body {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.35s var(--ease);
+  transform-style: preserve-3d;
+}
+.medal.tilt:hover .medal-body {
+  transition: transform 0.08s linear;
+}
+.medal-body > svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.medal.on .medal-body > svg {
+  filter: drop-shadow(0 3px 6px var(--medal-shadow));
+}
+.medal-rim {
+  stroke: rgba(0, 0, 0, 0.45);
+  stroke-width: 0.8;
+}
+.medal.locked .medal-rim {
+  stroke: var(--line-strong);
+}
+.medal-sheen {
+  transform-box: view-box;
+  transform: translateX(var(--sx)) rotate(20deg);
+  transform-origin: 50px 50px;
+  transition: transform 0.35s var(--ease);
+  opacity: 0.85;
+}
+.medal.tilt:hover .medal-sheen {
+  transition: transform 0.08s linear;
+}
+.medal.fresh .medal-sheen {
+  animation: medal-shine 1.6s 0.3s var(--ease) both;
+}
+@keyframes medal-shine {
+  from {
+    transform: translateX(-85px) rotate(20deg);
+  }
+  to {
+    transform: translateX(85px) rotate(20deg);
+  }
+}
+.medal-guilloche {
+  opacity: 0.22;
+}
+.medal-ring-track {
+  stroke: var(--line-strong);
+}
+.medal-ring-fill {
+  stroke: var(--accent);
+}
+.medal-ribbon text {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.medal-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+  pointer-events: none;
+}
+/* vyražený (rytý) vzhled ikony na kovu */
+.medal.on .medal-icon {
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.55)) drop-shadow(0 -0.5px 0 rgba(0, 0, 0, 0.35));
+}
+.medal-q {
+  font-size: 1.6em;
+  font-weight: 600;
+}
+.coin {
+  display: inline-block;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+/* ---------- souhrn ---------- */
+.ach-summary {
   display: flex;
-  gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px 40px;
 }
-.ach-row:first-child {
-  padding-top: 2px;
-}
-.ach-row:last-child {
-  border-bottom: 0;
-}
-.ach-main {
-  flex: 1;
-  min-width: 0;
+.ach-count {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-.ach-name {
-  font-weight: 600;
-  font-size: 13.5px;
-}
-.ach-roman {
-  font-size: 12px;
-  font-weight: 600;
-}
-.ach-track {
-  display: flex;
-  gap: 4px;
-  margin-top: 2px;
-}
-.ach-node {
+  min-width: 220px;
   flex: 1;
+  max-width: 520px;
+}
+.ach-count-num {
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.ach-count-num small {
+  font-size: 16px;
+  color: var(--text-3);
+}
+.ach-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--panel-3);
+  overflow: hidden;
+}
+.ach-bar.big {
+  height: 6px;
+  border-radius: 3px;
+}
+.ach-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.ach-metals {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.ach-metal {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+.ach-metal .num {
+  font-size: 20px;
+  font-weight: 500;
+}
+.ach-metal .label {
+  grid-column: 1 / -1;
+}
+.ach-metal.none {
+  opacity: 0.4;
+}
+
+/* ---------- na dosah / nedávno ---------- */
+.ach-close {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.ach-close-item,
+.ach-latest-item,
+.ach-tile {
+  font: inherit;
+  color: inherit;
+  text-align: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
   min-width: 0;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
-.ach-node i {
-  display: block;
-  height: 3px;
-  border-radius: 1px;
-  background: var(--panel-3);
+.ach-close-item:hover,
+.ach-latest-item:hover,
+.ach-tile:hover {
+  background: var(--panel-2);
+  border-color: var(--line);
 }
-.ach-node.on i {
-  background: var(--m);
+.ach-latest {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
 }
-.ach-node span {
-  font-size: 9.5px;
-  color: var(--text-3);
-  text-align: center;
+.ach-latest-item {
+  padding: 8px 4px;
+  gap: 4px;
 }
-.ach-node.on span {
+.ach-latest-item .ellipsis {
+  max-width: 100%;
+}
+
+/* ---------- vitrína ---------- */
+.ach-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 4px 2px 10px;
+}
+.ach-group-head h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.ach-tile {
+  position: relative;
+  padding: 16px 8px 12px;
+}
+.ach-tile-name {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.25;
+  margin-top: 4px;
+}
+.ach-tile-roman {
+  font-size: 11.5px;
   color: var(--text-2);
 }
-.ach-singles {
+.ach-tile-foot {
+  font-size: 11.5px;
+  color: var(--text-3);
+  line-height: 1.35;
+}
+.ach-tile.on .ach-tile-foot {
+  color: var(--text-2);
+}
+.ach-tile:not(.on) .ach-tile-name {
+  color: var(--text-2);
+}
+.ach-pips {
+  display: flex;
+  gap: 3px;
+}
+.ach-pips i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--panel-3);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.ach-pips i.next {
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+.ach-pips i.on {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.ach-pips i.m-steel {
+  background: radial-gradient(circle at 35% 30%, #eef1f5, #a3acb7 55%, #58616c);
+}
+.ach-pips i.m-bronze {
+  background: radial-gradient(circle at 35% 30%, #f7d4b0, #c0824f 55%, #6b3d21);
+}
+.ach-pips i.m-silver {
+  background: radial-gradient(circle at 35% 30%, #fff, #c8ced5 55%, #7a838d);
+}
+.ach-pips i.m-gold {
+  background: radial-gradient(circle at 35% 30%, #fff3bf, #e2b247 55%, #8a5f12);
+}
+.ach-pips i.m-platinum {
+  background: radial-gradient(circle at 35% 30%, #f5fcff, #b7dbee 55%, #5a8ba5);
+}
+.ach-new {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+/* ---------- detail ---------- */
+.ach-detail {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-  padding-top: 14px;
+  grid-template-columns: auto 1fr;
+  gap: 8px 28px;
+  align-items: center;
+}
+.ach-hero-medal {
+  padding: 8px 6px;
+}
+.ach-detail-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.ach-detail-desc {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.35;
+  margin: 0;
+}
+.ach-next {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
 }
-.ach-single {
+.ach-tiers {
+  grid-column: 1 / -1;
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 10px;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--r-sm);
-  opacity: 0.75;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 14px 2px 2px;
+  margin-top: 6px;
+  border-top: 1px solid var(--line);
 }
-.ach-single.on {
-  border-style: solid;
-  border-color: var(--line);
-  opacity: 1;
+.ach-tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 78px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.ach-tier .small {
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.ach-tier.on {
+  color: var(--text);
 }
 .rarity {
   font-size: 11px;
   color: var(--text-3);
+}
+
+@media (max-width: 640px) {
+  .ach-metals {
+    gap: 12px;
+  }
+  .ach-metal .num {
+    font-size: 16px;
+  }
+  .ach-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 8px;
+  }
+  .ach-detail {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+  .ach-latest {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medal-body,
+  .medal-sheen {
+    transition: none;
+  }
+  .medal.fresh .medal-sheen {
+    animation: none;
+  }
 }

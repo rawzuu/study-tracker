@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useStore } from '../../data/store';
 import { useToast } from '../../components/ui';
+import { navigate } from '../../lib/router';
 import { describe, evaluate } from './achievements';
 
 const KEY = 'st.ach.seen';
@@ -26,7 +27,7 @@ export function AchievementWatcher() {
     }
     if (fresh.length) {
       const d = describe(fresh[fresh.length - 1]);
-      if (d) toast(`Odemčeno: ${d.name} – ${d.desc}${fresh.length > 1 ? ` (+${fresh.length - 1} další)` : ''}`);
+      if (d) toast(`Odemčeno: ${d.name} – ${d.desc}${fresh.length > 1 ? ` (+${fresh.length - 1} další)` : ''}`, { label: 'Zobrazit', onClick: () => navigate('uspechy') });
     }
   }, [ids, toast]);
 

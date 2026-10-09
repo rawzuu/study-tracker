@@ -226,3 +226,16 @@ describe('kalibrace (návrhy v měsíčním reportu)', () => {
     expect(pendingSuggestions(other, 2026, 8).find((x) => x.key === 'dailyGoal')).toBeDefined();
   });
 });
+
+describe('skrytí Reflexe', () => {
+  it('úspěchy skryté stránky se nezobrazují ani nepočítají', async () => {
+    const { evaluate } = await import('../features/achievements/achievements');
+    const refl = { id: 'r1', weekStart: '2026-09-28', rating: 4, wentWell: '', blocked: '', focusNext: '', createdAt: NOW - D, updatedAt: NOW - D };
+    const shown = evaluate(data({ reflections: [refl] }), NOW);
+    expect(shown.unlockedIds).toContain('first-reflection');
+    expect(shown.unlockedIds).toContain('reflections.1');
+    const hidden = evaluate(data({ reflections: [refl], settings: { ...data().settings, hiddenPages: ['reflexe'] } }), NOW);
+    expect(hidden.unlockedIds.some((id) => id.startsWith('reflection') || id === 'first-reflection')).toBe(false);
+    expect(hidden.total).toBe(shown.total - 6); // 5 úrovní + 1 jednorázový
+  });
+});

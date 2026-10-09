@@ -107,7 +107,8 @@ export function Dashboard() {
   // Bannery: reflexe a měsíční report
   const lastWeekCount = inRange(sessions, addDays(week, -7), week).length;
   const [reflDismissed, dismissRefl] = useDismiss(`st.dismiss.refl.${lastWeekKey()}`);
-  const showReflection = data.settings.weeklyReflection && !reflDismissed && reflectionDue(data.reflections, lastWeekCount);
+  const reflectionHidden = (data.settings.hiddenPages ?? []).includes('reflexe');
+  const showReflection = !reflectionHidden && data.settings.weeklyReflection && !reflDismissed && reflectionDue(data.reflections, lastWeekCount);
   const prevMonth = new Date(new Date(now).getFullYear(), new Date(now).getMonth() - 1, 1);
   const prevMonthCount = inRange(sessions, prevMonth.getTime(), new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 1).getTime()).length;
   const [reportDismissed, dismissReport] = useDismiss(`st.dismiss.report.${prevMonth.getFullYear()}-${prevMonth.getMonth()}`);
@@ -116,7 +117,7 @@ export function Dashboard() {
     () => (showReport ? pendingSuggestions(data, prevMonth.getFullYear(), prevMonth.getMonth()).length : 0),
     [showReport, data], // eslint-disable-line react-hooks/exhaustive-deps
   );
-  const thisWeekReflection = data.reflections.find((r) => !r.deletedAt && r.weekStart === lastWeekKey() && r.focusNext);
+  const thisWeekReflection = reflectionHidden ? undefined : data.reflections.find((r) => !r.deletedAt && r.weekStart === lastWeekKey() && r.focusNext);
 
   const [planOpen, setPlanOpen] = useState(false);
   const [morningDismissed, dismissMorning] = useDismiss(`st.dismiss.morning.${dayKey(now)}`);

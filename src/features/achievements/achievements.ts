@@ -70,6 +70,7 @@ export interface Family {
   id: string;
   name: string;
   group: Group;
+  feature?: string; // patří ke stránce, kterou jde skrýt (např. 'reflexe') – při skrytí se nepočítá
   icon: IconName;
   thresholds: number[];
   unit: 'h' | 'd' | 'x' | 'min' | '';
@@ -81,6 +82,7 @@ export interface Single {
   id: string;
   name: string;
   group: Group;
+  feature?: string;
   icon: IconName;
   desc: string;
   secret?: boolean;
@@ -163,7 +165,7 @@ export const FAMILIES: Family[] = [
     const sats = f.daysSorted.filter((k) => parseDayKey(k).getDay() === 6 && f.perDay.has(dayKey(addDays(parseDayKey(k).getTime(), 1))));
     return count(sats.map((k) => addDays(parseDayKey(k).getTime(), 2) - 1));
   } },
-  { id: 'reflections', name: 'Reflexe', group: 'Pravidelnost', icon: 'notebook', unit: 'x', thresholds: [1, 4, 12, 26, 52], desc: (t) => `${t} ${cz(t, 'týdenní reflexe', 'týdenní reflexe', 'týdenních reflexí')}`, metric: (f) => count(alive(f.data.reflections).map((r) => r.createdAt)) },
+  { id: 'reflections', name: 'Reflexe', group: 'Pravidelnost', feature: 'reflexe', icon: 'notebook', unit: 'x', thresholds: [1, 4, 12, 26, 52], desc: (t) => `${t} ${cz(t, 'týdenní reflexe', 'týdenní reflexe', 'týdenních reflexí')}`, metric: (f) => count(alive(f.data.reflections).map((r) => r.createdAt)) },
 
   // ---------- Soustředění ----------
   { id: 'sessions', name: 'Bloky', group: 'Soustředění', icon: 'blocks', unit: 'x', thresholds: [1, 10, 50, 100, 250, 500, 1000], desc: (t) => `${fmtN(t)} ${cz(t, 'blok', 'bloky', 'bloků')} učení`, metric: (f) => count(f.focus.map((s) => s.end)) },
@@ -219,7 +221,7 @@ export const SINGLES: Single[] = [
     }
     return null;
   } },
-  { id: 'first-reflection', name: 'Zpětný pohled', group: 'Pravidelnost', icon: 'notebook', desc: 'Napiš první týdenní reflexi', check: (f) => alive(f.data.reflections).reduce<number | null>((m, r) => (m == null || r.createdAt < m ? r.createdAt : m), null) },
+  { id: 'first-reflection', name: 'Zpětný pohled', group: 'Pravidelnost', feature: 'reflexe', icon: 'notebook', desc: 'Napiš první týdenní reflexi', check: (f) => alive(f.data.reflections).reduce<number | null>((m, r) => (m == null || r.createdAt < m ? r.createdAt : m), null) },
   { id: 'anki-link', name: 'Propojeno', group: 'Paměť', icon: 'layers', desc: 'Propoj Study Tracker s Anki', check: (f) => f.data.anki.find((a) => a.id === 'snapshot')?.createdAt ?? null },
   // Skryté
   { id: 'new-year', name: 'Předsevzetí', group: 'Zvláštní', icon: 'sparkles', desc: 'Uč se 1. ledna', secret: true, check: (f) => f.sessions.find((s) => new Date(s.start).getMonth() === 0 && new Date(s.start).getDate() === 1)?.end ?? null },
@@ -253,7 +255,10 @@ export interface Results {
 
 export function evaluate(data: AppData, now = Date.now()): Results {
   const f = buildFacts(data, now);
-  const families = FAMILIES.map((fam) => {
+  // Úspěchy skrytých stránek (např. Reflexe) se nezobrazují ani nepočítají.
+  const hidden = new Set(data.settings.hiddenPages ?? []);
+  const visible = <T extends { feature?: string }>(x: T) => !x.feature || !hidden.has(x.feature);
+  const families = FAMILIES.filter(visible).map((fam) => {
     const m = fam.metric(f);
     const tiers = fam.thresholds.map((th) => {
       const unlocked = m.value >= th - 1e-9;
@@ -264,7 +269,7 @@ export function evaluate(data: AppData, now = Date.now()): Results {
     const prev = tier ? fam.thresholds[tier - 1] : 0;
     return { family: fam, value: m.value, tier, tiers, next, progress: next == null ? 1 : Math.max(0, Math.min(1, (m.value - prev) / (next - prev))) };
   });
-  const singles = SINGLES.map((s) => {
+  const singles = SINGLES.filter(visible).map((s) => {
     const at = s.check(f);
     return { single: s, unlocked: at != null, at: at != null && at >= 0 ? at : null };
   });
@@ -272,7 +277,7 @@ export function evaluate(data: AppData, now = Date.now()): Results {
     ...families.flatMap((r) => r.tiers.map((t, i) => (t.unlocked ? `${r.family.id}.${i + 1}` : null)).filter((x): x is string => !!x)),
     ...singles.filter((s) => s.unlocked).map((s) => s.single.id),
   ];
-  const total = FAMILIES.reduce((a, fam) => a + fam.thresholds.length, 0) + SINGLES.length;
+  const total = families.reduce((a, r) => a + r.family.thresholds.length, 0) + singles.length;
   return { families, singles, unlockedIds, total, unlocked: unlockedIds.length };
 }
 
