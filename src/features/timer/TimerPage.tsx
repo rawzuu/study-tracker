@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BellOff, Check, Coffee, Headphones, Maximize2, Minimize2, Pause, Play, SkipForward, Square } from 'lucide-react';
+import { BellOff, Check, Coffee, Maximize2, Minimize2, Pause, Play, SkipForward, Square } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { NoiseType, alive } from '../../data/schema';
 import { fmtClock, fmtDuration, startOfDay } from '../../lib/time';
@@ -21,7 +21,7 @@ export function TimerRing({ size = 340 }: { size?: number }) {
   const countUp = idle ? mode.workMin == null : remainingMs == null;
   const p = idle ? 0 : countUp ? (elapsedMs % 3_600_000) / 3_600_000 : progress;
   const display = idle ? fmtClock((mode.workMin ?? 0) * 60_000) : countUp ? fmtClock(elapsedMs) : fmtClock(remainingMs ?? 0);
-  const label = idle ? 'připraveno' : state.phase === 'work' ? 'učení' : state.phase === 'long' ? 'dlouhá pauza' : 'pauza';
+  const label = idle ? 'Připraveno' : state.phase === 'work' ? 'Učení' : state.phase === 'long' ? 'Dlouhá pauza' : 'Pauza';
 
   const V = 200; // viewBox
   const cx = V / 2;
@@ -165,9 +165,7 @@ function NoiseControl() {
   return (
     <div className="card">
       <div className="card-head">
-        <h2 className="row" style={{ gap: 8 }}>
-          <Headphones size={15} /> Šum na soustředění
-        </h2>
+        <h2>Šum na soustředění</h2>
       </div>
       <div className="stack">
         <Segmented<NoiseType>
@@ -234,10 +232,9 @@ export function TimerPage() {
         <div className="page-head">
           <div>
             <h1>Časovač</h1>
-            <p>Vyber předmět a režim. Mezerník spustí nebo pozastaví.</p>
           </div>
           <div className="row">
-            <span className="label">dnes</span>
+            <span className="label">Dnes</span>
             <span className="num" style={{ fontSize: 15 }}>
               {fmtDuration(todaySec, { short: true })}
               {goal > 0 && <span className="faint"> / {fmtDuration(goal, { short: true })}</span>}
@@ -275,7 +272,7 @@ export function TimerPage() {
               <span>{BREAK_TIPS[(tip + state.round) % BREAK_TIPS.length]}</span>
             </div>
           )}
-          {state.status === 'idle' && !state.subjectId && <p className="faint small">Nejdřív vyber předmět.</p>}
+          {state.status === 'idle' && <p className="faint small">{state.subjectId ? 'Mezerník spustí i pozastaví.' : 'Nejdřív vyber předmět.'}</p>}
         </div>
 
         {!zen && (

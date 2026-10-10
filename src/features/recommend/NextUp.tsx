@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, Compass, Layers, Play } from 'lucide-react';
+import { ChevronDown, Layers, Play } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { Recommendation, W, contextNote, recommend } from '../../lib/recommend';
 import { navigate } from '../../lib/router';
@@ -60,9 +60,7 @@ export function NextUp({ className = '' }: { className?: string }) {
   return (
     <div className={`card nextup ${className}`}>
       <div className="card-head">
-        <h2 className="row" style={{ gap: 8 }}>
-          <Compass size={15} /> Co teď?
-        </h2>
+        <h2>Co teď?</h2>
         {top && (
           <button className="btn ghost sm" onClick={() => setWhy(!why)}>
             Proč <ChevronDown size={13} style={{ transform: why ? 'rotate(180deg)' : undefined }} />
@@ -101,7 +99,7 @@ export function NextUp({ className = '' }: { className?: string }) {
           </div>
           {alts.length > 0 && (
             <div className="nx-alts">
-              <span className="label">nebo</span>
+              <span className="label">Nebo</span>
               {alts.map((r) => (
                 <button key={r.key} className="nx-alt" disabled={busy || r.activity === 'anki'} onClick={() => startRecommendation(r, timer)} title={r.reasons.join(' · ')}>
                   <Color id={r.subjectId} />
@@ -124,13 +122,13 @@ export function NextUp({ className = '' }: { className?: string }) {
           <table className="table nx-table">
             <thead>
               <tr>
-                <th>předmět</th>
+                <th>Předmět</th>
                 {SIGNALS.map((s) => (
                   <th key={s.k} className="r" title={s.hint}>
                     {s.label}
                   </th>
                 ))}
-                <th className="r">skóre</th>
+                <th className="r">Skóre</th>
               </tr>
             </thead>
             <tbody>
@@ -170,9 +168,8 @@ export function NextUpInline() {
   const s = data.subjects.find((x) => x.id === top.subjectId);
   return (
     <div className="nx-inline">
-      <Compass size={14} />
       <span className="grow">
-        <span className="label">doporučuji</span>{' '}
+        <span className="label">Doporučuji</span>{' '}
         <b style={{ color: s?.color }}>{s?.name}</b> · {top.title} · <span className="num">{top.minutes} min</span>
       </span>
       <button className="btn sm" onClick={() => timer.configure({ subjectId: top.subjectId!, topic: top.topic, modeId: top.modeId, planBlockId: top.planBlockId })}>

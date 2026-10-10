@@ -60,7 +60,7 @@ export function Onboarding() {
 
         {step === 0 && (
           <div className="stack" style={{ gap: 16 }}>
-            <div className="label">vítej</div>
+            <div className="label">Vítej</div>
             <h1>Study Tracker</h1>
             <p className="muted">
               Měř, kolik se čemu učíš, plánuj týden a nech si připomínat opakování ve správný čas. Časovače i metody vycházejí
@@ -90,7 +90,7 @@ export function Onboarding() {
 
         {step === 1 && (
           <div className="stack" style={{ gap: 16 }}>
-            <div className="label">krok 1 ze 2</div>
+            <div className="label">Krok 1 ze 2</div>
             <h1>Co se učíš?</h1>
             <p className="muted">Přidej předměty. Další můžeš kdykoliv doplnit.</p>
             <div className="stack tight">
@@ -122,7 +122,7 @@ export function Onboarding() {
 
         {step === 2 && (
           <div className="stack" style={{ gap: 16 }}>
-            <div className="label">krok 2 ze 2</div>
+            <div className="label">Krok 2 ze 2</div>
             <h1>Kde budou tvoje data</h1>
             <div className="ob-choice">
               <div className="ob-option">

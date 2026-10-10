@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { AlertTriangle, CalendarClock, CheckCircle2, CloudUpload, Copy, Download, FileSpreadsheet, Github, Info, Moon, Monitor, Plus, RefreshCw, Sun, Trash2, Upload, Volume2 } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle2, CloudUpload, Copy, Download, FileSpreadsheet, Info, Moon, Monitor, Plus, RefreshCw, Sun, Trash2, Upload, Volume2 } from 'lucide-react';
 import { sessionsToCsv } from '../../lib/csv';
 import { AnkiSettings } from '../anki/AnkiSettings';
 import { FEED_FILE, buildFeed, feedHttpsUrl, feedWebcalUrl, publishFeed, readFeedStatus } from '../planner/calendarFeed';
@@ -40,7 +40,6 @@ export function SettingsPage() {
       <div className="page-head">
         <div>
           <h1>Nastavení</h1>
-          <p>Vzhled, časovač, synchronizace a zálohy.</p>
         </div>
       </div>
       <div className="masonry">
@@ -259,7 +258,7 @@ function SyncSection() {
       case 'off':
         return <span className="chip warn">Vypnuto – data jsou jen v tomto prohlížeči</span>;
       case 'syncing':
-        return <span className="chip accent">Synchronizuji…</span>;
+        return <span className="chip">Synchronizuji…</span>;
       case 'ok':
         return (
           <span className="chip ok">
@@ -280,9 +279,7 @@ function SyncSection() {
   return (
     <div className="card">
       <div className="card-head">
-        <h2 className="row" style={{ gap: 8 }}>
-          <Github size={17} /> Synchronizace s GitHubem
-        </h2>
+        <h2>Synchronizace s GitHubem</h2>
         {status}
       </div>
 
@@ -591,9 +588,7 @@ function CalendarFeedSection() {
   return (
     <div className="card">
       <div className="card-head">
-        <h2 className="row" style={{ gap: 8 }}>
-          <CalendarClock size={16} /> Odebíraný kalendář
-        </h2>
+        <h2>Odebíraný kalendář</h2>
         {feed ? <span className="chip ok">zapnuto</span> : <span className="chip">vypnuto</span>}
       </div>
       <div className="stack">

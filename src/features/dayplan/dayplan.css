@@ -9,7 +9,7 @@
   font-weight: 500;
 }
 .dp-sum .accent-text b {
-  color: var(--accent);
+  color: var(--text);
 }
 .dp-axis {
   position: relative;

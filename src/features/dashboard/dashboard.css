@@ -11,14 +11,12 @@
 .dash-timer .ring-sub .label {
   display: none;
 }
+/* Záměr týdne z reflexe – jen tichý řádek, bez rámečku. */
 .intent {
   display: flex;
   align-items: baseline;
-  gap: 12px;
-  padding: 10px 14px;
-  border-left: 2px solid var(--accent);
-  background: var(--panel);
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  gap: 10px;
+  padding: 0 2px;
   font-size: 13.5px;
 }
 .countdown {
@@ -34,8 +32,7 @@
   font-weight: 450;
 }
 .countdown .label {
-  font-size: 9.5px;
-  letter-spacing: 0.04em;
+  font-size: 11px;
 }
 .warn-text {
   color: var(--warn);

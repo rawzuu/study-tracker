@@ -79,11 +79,10 @@ export function ReflectionPage() {
     <div className="stack loose">
       <div className="page-head">
         <div>
-          <div className="label eyebrow">týdenní reflexe</div>
+          <div className="label eyebrow">Týdenní reflexe</div>
           <h1>
             {fmtDate(from, { day: 'numeric', month: 'long' })} – {fmtDate(addDays(from, 6), { day: 'numeric', month: 'long' })}
           </h1>
-          <p>Pár minut zamyšlení nad týdnem zlepšuje plánování i motivaci (metakognice).</p>
         </div>
         <div className="row">
           <button className="btn icon" onClick={() => setWeek(dayKey(addDays(from, -7)))} aria-label="Předchozí týden">
@@ -97,14 +96,14 @@ export function ReflectionPage() {
 
       <div className="strip" style={{ ['--n' as string]: 5 }}>
         <div className="cell">
-          <span className="label">celkem</span>
+          <span className="label">Celkem</span>
           <span className="value">{fmtDuration(cur.total, { short: true })}</span>
           <span className="foot">
             {change == null ? 'bez srovnání' : <span className={change >= 0 ? 'delta-up' : 'delta-down'}>{change >= 0 ? '▲' : '▼'} {Math.abs(change)} % vs. předchozí</span>}
           </span>
         </div>
         <div className="cell">
-          <span className="label">aktivní dny</span>
+          <span className="label">Aktivní dny</span>
           <span className="value">
             {cur.activeDays}
             <small>/7</small>
@@ -112,7 +111,7 @@ export function ReflectionPage() {
           <span className="foot">{cur.sessions} sezení</span>
         </div>
         <div className="cell">
-          <span className="label">cíle splněny</span>
+          <span className="label">Cíle splněny</span>
           <span className="value">
             {goals.length ? goalsMet : '—'}
             {goals.length > 0 && <small>/{goals.length}</small>}
@@ -120,12 +119,12 @@ export function ReflectionPage() {
           <span className="foot">týdenní cíle předmětů</span>
         </div>
         <div className="cell">
-          <span className="label">soustředění</span>
+          <span className="label">Soustředění</span>
           <span className="value">{cur.focus ? cur.focus.toFixed(1) : '—'}</span>
           <span className="foot">{prev.focus ? `předtím ${prev.focus.toFixed(1)}` : '—'}</span>
         </div>
         <div className="cell">
-          <span className="label">plnění plánu</span>
+          <span className="label">Plnění plánu</span>
           <span className="value">{cur.planAdherence == null ? '—' : `${Math.round(cur.planAdherence * 100)} %`}</span>
           <span className="foot">hotových bloků</span>
         </div>
@@ -139,7 +138,7 @@ export function ReflectionPage() {
           </div>
           <div className="stack" style={{ gap: 16 }}>
             <div className="stack tight">
-              <span className="label">celkové hodnocení týdne</span>
+              <span className="label">Celkové hodnocení týdne</span>
               <div className="segmented" style={{ alignSelf: 'flex-start' }}>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button key={n} className={rating === n ? 'on' : ''} onClick={() => setRating(n)}>

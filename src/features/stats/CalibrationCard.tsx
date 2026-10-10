@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { CalibrationEntry, Settings } from '../../data/schema';
 import { CalibrationKey, Suggestion, calibrate, enoughData, monthKey } from '../../lib/calibrate';
@@ -55,9 +54,7 @@ export function CalibrationCard({ y, m }: { y: number; m: number }) {
   return (
     <div className="card no-print calib">
       <div className="card-head">
-        <h2 className="row" style={{ gap: 7 }}>
-          <SlidersHorizontal size={14} /> Návrhy na další měsíc
-        </h2>
+        <h2>Návrhy na další měsíc</h2>
         <span className="sub">podle posledních 8 týdnů</span>
       </div>
       {rows.length === 0 ? (

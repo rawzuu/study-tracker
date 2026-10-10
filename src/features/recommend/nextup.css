@@ -106,13 +106,8 @@
   gap: 10px;
   padding: 9px 12px;
   border: 1px solid var(--line);
-  border-left: 2px solid var(--accent);
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  border-radius: var(--r-sm);
   font-size: 13px;
-}
-.nx-inline svg {
-  color: var(--accent);
-  flex-shrink: 0;
 }
 @media (max-width: 900px) {
   .nx {

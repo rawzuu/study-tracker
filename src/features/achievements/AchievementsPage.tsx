@@ -218,13 +218,12 @@ export function AchievementsPage() {
       <div className="page-head">
         <div>
           <h1>Úspěchy</h1>
-          <p>Počítají se z tvých dat, i zpětně. Kliknutím na medaili uvidíš všechny její úrovně.</p>
         </div>
       </div>
 
       <div className="card ach-summary">
         <div className="ach-count">
-          <span className="label">sbírka</span>
+          <span className="label">Sbírka</span>
           <span className="ach-count-num num">
             {res.unlocked}
             <small>/{res.total}</small>
@@ -239,7 +238,7 @@ export function AchievementsPage() {
             <div key={m} className={`ach-metal ${byMaterial.get(m) ? '' : 'none'}`}>
               <Coin material={m} size={22} />
               <span className="num">{byMaterial.get(m)}</span>
-              <span className="label">{MATERIAL_LABEL[m]}</span>
+              <span className="label">{MATERIAL_LABEL[m].charAt(0).toUpperCase() + MATERIAL_LABEL[m].slice(1)}</span>
             </div>
           ))}
         </div>

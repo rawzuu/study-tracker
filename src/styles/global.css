@@ -1,6 +1,7 @@
 /* ============================================================
    Study Tracker v2 – „přesný nástroj“
-   Grafitová černá, jeden jantarový akcent, čísla v monospace,
+   Grafitová černá, jeden jantarový akcent jen pro akce a „teď“,
+   čísla se stejně širokými číslicemi (monospace jen časovač),
    tenké linky místo stínů. Tmavý režim je primární.
    ============================================================ */
 :root,
@@ -122,13 +123,25 @@ h3 {
 p {
   margin: 0;
 }
+/* Odkazy v textu: barva textu s tenkým podtržením (akcent patří jen akcím). */
 a {
-  color: var(--accent);
-  text-decoration: none;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 a:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration-color: var(--text-2);
+}
+/* Odkazy, které vypadají jako tlačítka nebo položky nabídky, se nepodtrhávají. */
+.btn,
+.nav a,
+.mobile-nav a,
+.card-head a,
+.sync-badge,
+.mini-timer {
+  text-decoration: none;
 }
 code {
   font-family: var(--mono);
@@ -148,17 +161,13 @@ input[type='range'] {
   accent-color: var(--accent);
 }
 
+/* Čísla: stejné písmo jako text, jen se stejně širokými číslicemi (nehýbou se). */
 .num {
-  font-family: var(--mono);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
 }
 .label {
-  font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--text-3);
 }
 .muted {
@@ -261,22 +270,12 @@ input[type='range'] {
   color: var(--text);
 }
 .nav a.active svg {
-  color: var(--accent);
-}
-.nav a.active::before {
-  content: '';
-  position: absolute;
-  left: -12px;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  border-radius: 0 2px 2px 0;
-  background: var(--accent);
+  color: var(--text);
 }
 .nav .badge {
   margin-left: auto;
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
   color: var(--accent);
 }
 
@@ -410,17 +409,15 @@ input[type='range'] {
   font-size: 13.5px;
 }
 .card-head .sub {
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-3);
-  letter-spacing: 0.02em;
 }
 .card-head a {
   font-size: 12.5px;
   color: var(--text-2);
 }
 .card-head a:hover {
-  color: var(--accent);
+  color: var(--text);
   text-decoration: none;
 }
 
@@ -445,10 +442,9 @@ input[type='range'] {
   border-left: 0;
 }
 .cell .value {
-  font-family: var(--mono);
   font-size: 26px;
-  font-weight: 450;
-  letter-spacing: -0.04em;
+  font-weight: 500;
+  letter-spacing: -0.03em;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -513,13 +509,12 @@ input[type='range'] {
   gap: 12px;
   padding: 8px 10px 8px 14px;
   border: 1px solid var(--line);
-  border-left: 2px solid var(--accent);
   background: var(--panel);
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  border-radius: var(--r-sm);
   font-size: 13.5px;
 }
-.banner svg {
-  color: var(--accent);
+.banner > svg {
+  color: var(--text-2);
   flex-shrink: 0;
 }
 
@@ -778,9 +773,9 @@ input[type='color'].input {
   height: 22px;
   padding: 0 7px;
   border-radius: 5px;
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
   border: 1px solid var(--line-strong);
   color: var(--text-2);
   white-space: nowrap;
@@ -865,12 +860,9 @@ input[type='color'].input {
 }
 .table th {
   text-align: left;
-  font-family: var(--mono);
   font-weight: 500;
   color: var(--text-3);
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 12px;
   padding: 0 10px 10px;
   border-bottom: 1px solid var(--line);
 }
@@ -885,7 +877,6 @@ input[type='color'].input {
   text-align: right;
 }
 .table td.r {
-  font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -911,7 +902,7 @@ input[type='color'].input {
 }
 .callout svg {
   flex-shrink: 0;
-  color: var(--accent);
+  color: var(--text-2);
   margin-top: 2px;
 }
 .callout.warn svg {
@@ -1034,8 +1025,7 @@ input[type='color'].input {
   background: transparent;
   color: var(--text-3);
   font: inherit;
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   text-align: left;
 }
@@ -1097,6 +1087,7 @@ input[type='color'].input {
   border-color: var(--accent);
 }
 .mini-timer .num {
+  font-family: var(--mono);
   font-size: 14px;
   color: var(--accent);
 }
@@ -1176,7 +1167,7 @@ input[type='color'].input {
     min-width: 54px;
   }
   .mobile-nav a.active {
-    color: var(--accent);
+    color: var(--text);
   }
   .mobile-nav a:hover {
     text-decoration: none;
@@ -1256,15 +1247,10 @@ input[type='color'].input {
   margin: 0;
   padding: 0;
   list-style: none;
-  counter-reset: i;
   display: flex;
   flex-direction: column;
 }
 .insights li {
-  counter-increment: i;
-  display: grid;
-  grid-template-columns: 26px 1fr;
-  gap: 6px;
   padding: 9px 0;
   border-bottom: 1px solid var(--line);
   font-size: 13.5px;
@@ -1275,13 +1261,6 @@ input[type='color'].input {
 }
 .insights li:last-child {
   border-bottom: 0;
-}
-.insights li::before {
-  content: counter(i, decimal-leading-zero);
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--accent);
-  padding-top: 2px;
 }
 /* Návrhy na další měsíc (kalibrace) */
 .calib-rows {
@@ -1343,7 +1322,7 @@ input[type='color'].input {
   cursor: pointer;
 }
 .reflection-row:hover {
-  color: var(--accent);
+  color: var(--text-2);
 }
 .feed-url {
   display: flex;
@@ -1365,7 +1344,7 @@ input[type='color'].input {
 .recall {
   margin-top: 4px;
   padding-left: 9px;
-  border-left: 2px solid var(--accent-line);
+  border-left: 2px solid var(--line-strong);
   color: var(--text-2);
   white-space: pre-wrap;
 }

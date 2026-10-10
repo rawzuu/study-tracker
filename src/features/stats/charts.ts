@@ -1,5 +1,5 @@
 import type { EChartsCoreOption } from 'echarts/core';
-import { ChartColors, MONO, axisLabel, tooltipBase } from '../../components/Chart';
+import { ChartColors, SANS, axisLabel, tooltipBase } from '../../components/Chart';
 import { addDays, dayKey, fmtDuration, startOfDay, WEEKDAYS_SHORT } from '../../lib/time';
 
 /**
@@ -83,12 +83,12 @@ export function calendarHeatmap(c: ChartColors, perDay: Map<string, number>, day
       splitLine: { show: false },
       itemStyle: { color: 'transparent', borderColor: c.panel, borderWidth: 3 },
       yearLabel: { show: false },
-      dayLabel: { firstDay: 1, nameMap: ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'], color: c.text3, fontSize: 10, fontFamily: MONO },
+      dayLabel: { firstDay: 1, nameMap: ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'], color: c.text3, fontSize: 10, fontFamily: SANS },
       monthLabel: {
         nameMap: ['led', 'úno', 'bře', 'dub', 'kvě', 'čvn', 'čvc', 'srp', 'zář', 'říj', 'lis', 'pro'],
         color: c.text3,
         fontSize: 10.5,
-        fontFamily: MONO,
+        fontFamily: SANS,
       },
     },
     series: [
@@ -159,7 +159,7 @@ export function trendLine(c: ChartColors, labels: string[], values: number[], go
               silent: true,
               symbol: 'none',
               lineStyle: { color: c.text3, type: [4, 4], width: 1 },
-              label: { color: c.text3, formatter: 'cíl', position: 'insideEndTop', fontSize: 10.5, fontFamily: MONO },
+              label: { color: c.text3, formatter: 'cíl', position: 'insideEndTop', fontSize: 10.5, fontFamily: SANS },
               data: [{ yAxis: goalMin }],
             }
           : undefined,
@@ -196,11 +196,11 @@ export function donut(c: ChartColors, items: { name: string; color: string; min:
   return {
     title: {
       text: fmtDuration(total * 60, { short: true }),
-      subtext: 'CELKEM',
+      subtext: 'celkem',
       left: 'center',
       top: '38%',
-      textStyle: { color: c.text, fontFamily: MONO, fontSize: 20, fontWeight: 450 },
-      subtextStyle: { color: c.text3, fontFamily: MONO, fontSize: 10 },
+      textStyle: { color: c.text, fontFamily: SANS, fontSize: 20, fontWeight: 500 },
+      subtextStyle: { color: c.text3, fontFamily: SANS, fontSize: 11 },
       itemGap: 4,
     },
     tooltip: {

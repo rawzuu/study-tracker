@@ -93,10 +93,10 @@ export function periodStats(all: Session[], blocks: PlanBlock[], from: number, t
   const chronotype = !list.length
     ? '—'
     : morning >= 0.45
-      ? 'Ranní ptáče 🌅'
+      ? 'Ranní ptáče'
       : night >= 0.55
-        ? 'Noční sova 🦉'
-        : 'Denní typ ☀️';
+        ? 'Noční sova'
+        : 'Denní typ';
 
   // Bloky z Anki jsou krátké opakování kartiček – do průměrné délky bloku a hluboké práce je nepočítáme.
   const focusList = list.filter((s) => s.mode !== 'anki');

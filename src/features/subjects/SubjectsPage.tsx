@@ -122,7 +122,6 @@ export function SubjectsPage() {
       <div className="page-head">
         <div>
           <h1>Předměty</h1>
-          <p>Barvy, týdenní cíle a archiv.</p>
         </div>
         <button className="btn primary" onClick={() => setEditing('new')}>
           <Plus size={16} /> Nový předmět

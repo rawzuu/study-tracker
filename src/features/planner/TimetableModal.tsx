@@ -133,7 +133,7 @@ export function TimetableModal({ onClose }: { onClose: () => void }) {
             </div>
             {diff && (
               <div className="stack tight">
-                <span className="label">změny v budoucích termínech</span>
+                <span className="label">Změny v budoucích termínech</span>
                 <div className="tt-diff">
                   <span>
                     <b className="num">+{diff.added}</b> nových

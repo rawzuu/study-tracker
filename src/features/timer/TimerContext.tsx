@@ -171,7 +171,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       saveSession(s, endAt, elapsed);
       if (natural) {
         if (st.sound) chime(st.volume, 'work-end');
-        notify('Blok práce hotový 🎉', 'Dej si pauzu – zasloužíš si ji.');
+        notify('Blok práce hotový', 'Dej si pauzu – zasloužíš si ji.');
       }
       if (m.kind === 'stopwatch') {
         setState((p) => ({ ...p, status: 'idle', phase: 'work', segmentStart: null, accumulated: 0, phaseDurationMs: null, interruptions: 0, workStartedAt: null, planBlockId: undefined }));
@@ -258,9 +258,9 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       document.title = 'Study Tracker';
       return;
     }
-    const label = state.phase === 'work' ? '📚' : '☕';
+    const label = state.status === 'paused' ? 'pozastaveno' : state.phase === 'work' ? 'učení' : 'pauza';
     const t = remainingMs != null ? fmtClock(remainingMs) : fmtClock(elapsedMs);
-    document.title = `${state.status === 'paused' ? '⏸ ' : ''}${label} ${t} · Study Tracker`;
+    document.title = `${t} ${label} · Study Tracker`;
   }, [state.status, state.phase, remainingMs, elapsedMs]);
 
   // ---------- akce ----------

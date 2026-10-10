@@ -29,9 +29,7 @@ export function AnkiPanel({ className = '' }: { className?: string }) {
   return (
     <div className={`card ${className}`}>
       <div className="card-head">
-        <h2 className="row" style={{ gap: 7 }}>
-          <Layers size={14} /> Anki dnes
-        </h2>
+        <h2>Anki dnes</h2>
         <div className="row" style={{ gap: 4 }}>
           <span className={`sub anki-status s-${status.state}`}>{statusText}</span>
           {data.settings.anki.enabled && (
@@ -52,7 +50,7 @@ export function AnkiPanel({ className = '' }: { className?: string }) {
           <div className="anki-hero">
             <div>
               <div className="anki-big num">{fresh ? due : '—'}</div>
-              <div className="label">{fresh ? 'zbývá dnes' : 'stav není z dneška'}</div>
+              <div className="label">{fresh ? 'Zbývá dnes' : 'Stav není z dneška'}</div>
             </div>
             <div className="anki-counts num">
               <span className="c-new" title="Nové">{totals.n}</span>

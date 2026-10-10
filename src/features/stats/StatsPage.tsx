@@ -108,7 +108,6 @@ export function StatsPage() {
       <div className="page-head">
         <div>
           <h1>Statistiky</h1>
-          <p>Co, kdy a jak dlouho se učíš.</p>
         </div>
         <div className="row wrap">
           <div style={{ width: 210 }}>
@@ -128,7 +127,7 @@ export function StatsPage() {
         <>
           <div className="strip" style={{ ['--n' as string]: 6 }}>
             <div className="cell">
-              <span className="label">celkem</span>
+              <span className="label">Celkem</span>
               <span className="value">{fmtHours(total)}</span>
               <span className="foot">
                 {change == null ? (
@@ -141,12 +140,12 @@ export function StatsPage() {
               </span>
             </div>
             <div className="cell">
-              <span className="label">ø na den</span>
+              <span className="label">Ø na den</span>
               <span className="value">{fmtDuration(total / days, { short: true })}</span>
               <span className="foot">za celé období</span>
             </div>
             <div className="cell">
-              <span className="label">aktivní dny</span>
+              <span className="label">Aktivní dny</span>
               <span className="value">
                 {activeDays}
                 <small>/{days}</small>
@@ -154,12 +153,12 @@ export function StatsPage() {
               <span className="foot">{Math.round((activeDays / days) * 100)} % pravidelnost</span>
             </div>
             <div className="cell">
-              <span className="label">ø blok</span>
+              <span className="label">Ø blok</span>
               <span className="value">{fmtDuration(avgLen, { short: true })}</span>
               <span className="foot">{blocks.length} bloků{filtered.length > blocks.length ? ` + ${filtered.length - blocks.length}× Anki` : ''}</span>
             </div>
             <div className="cell">
-              <span className="label">soustředění</span>
+              <span className="label">Soustředění</span>
               <span className="value">
                 {focus ? focus.toFixed(1) : '—'}
                 {focus && <small>/5</small>}
@@ -167,7 +166,7 @@ export function StatsPage() {
               <span className="foot">průměr hodnocení</span>
             </div>
             <div className="cell">
-              <span className="label">nejsilnější okno</span>
+              <span className="label">Nejsilnější okno</span>
               <span className="value">{peak ? `${peak.from}–${peak.to}h` : '—'}</span>
               <span className="foot">kdy se učíš nejvíc</span>
             </div>

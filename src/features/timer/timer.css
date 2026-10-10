@@ -67,13 +67,18 @@
   justify-content: center;
   gap: 10px;
 }
+/* Nápis nad časem: jantarově jen když blok běží, jinak neutrálně. */
 .ring-phase {
+  color: var(--text-3);
+}
+.ring.running .ring-phase {
   color: var(--accent);
 }
 .is-break .ring-phase {
   color: var(--break);
 }
 .ring-time {
+  font-family: var(--mono);
   font-size: clamp(46px, 11vw, 76px);
   font-weight: 400;
   letter-spacing: -0.06em;
@@ -158,8 +163,8 @@
   background: var(--panel-2);
 }
 .mode.on {
-  border-color: var(--accent-line);
-  background: var(--accent-soft);
+  border-color: var(--text-3);
+  background: var(--panel-2);
 }
 .mode:disabled:not(.on) {
   opacity: 0.4;
@@ -174,7 +179,7 @@
   color: var(--text-3);
 }
 .mode-check {
-  color: var(--accent);
+  color: var(--text);
 }
 .zen .timer-card {
   min-height: calc(100vh - 60px);
@@ -205,11 +210,8 @@
   background: var(--panel-2);
 }
 .rating button.on {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-.rating button.on .n {
-  color: var(--accent);
+  border-color: var(--text-2);
+  background: var(--panel-3);
 }
 .rating .n {
   font-size: 18px;

@@ -142,7 +142,6 @@ export function HistoryPage() {
       <div className="page-head">
         <div>
           <h1>Historie</h1>
-          <p>Všechna sezení. Časovač neběžel? Zapiš sezení ručně.</p>
         </div>
         <div className="row wrap">
           <div style={{ width: 220 }}>
@@ -169,7 +168,7 @@ export function HistoryPage() {
           <div className="card" key={day}>
             <div className="card-head">
               <h2 style={{ textTransform: 'capitalize' }}>{fmtDayLabel(list[0].start)}</h2>
-              <span className="chip accent num">{fmtDuration(totalSec(list))}</span>
+              <span className="chip num">{fmtDuration(totalSec(list))}</span>
             </div>
             <div className="list">
               {list.map((s) => (

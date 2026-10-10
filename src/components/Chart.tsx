@@ -31,7 +31,6 @@ echarts.use([
 
 export const ThemeContext = createContext<ResolvedTheme>('dark');
 
-export const MONO = "'Geist Mono', ui-monospace, Menlo, monospace";
 export const SANS = "'Geist', -apple-system, sans-serif";
 
 export interface ChartColors {
@@ -91,7 +90,7 @@ export function tooltipBase(c: ChartColors) {
 
 /** Styl popisků os. */
 export function axisLabel(c: ChartColors, extra: Record<string, unknown> = {}) {
-  return { color: c.text3, fontSize: 10.5, fontFamily: MONO, ...extra };
+  return { color: c.text3, fontSize: 11, fontFamily: SANS, ...extra };
 }
 
 export function Chart({ option, height = 260 }: { option: EChartsCoreOption; height?: number | string }) {
@@ -103,7 +102,7 @@ export function Chart({ option, height = 260 }: { option: EChartsCoreOption; hei
     inst.current = echarts.init(el.current, undefined, { renderer: 'canvas' });
     const ro = new ResizeObserver(() => inst.current?.resize());
     ro.observe(el.current);
-    // Po načtení webfontů graf překreslíme, aby popisky použily Geist Mono.
+    // Po načtení webfontů graf překreslíme, aby popisky použily Geist.
     document.fonts?.ready.then(() => inst.current?.resize()).catch(() => {});
     return () => {
       ro.disconnect();

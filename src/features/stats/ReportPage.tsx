@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, FileText, Printer, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Printer } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { alive } from '../../data/schema';
 import { Chart, chartColors, useTheme } from '../../components/Chart';
@@ -95,7 +95,7 @@ export function ReportPage() {
     <div className="stack loose report">
       <div className="page-head">
         <div>
-          <div className="label eyebrow">měsíční report{inProgress ? ' · průběžný' : ''}</div>
+          <div className="label eyebrow">Měsíční report{inProgress ? ' · průběžný' : ''}</div>
           <h1 style={{ textTransform: 'capitalize' }}>
             {MONTHS[m]} {y}
           </h1>
@@ -123,14 +123,14 @@ export function ReportPage() {
         <>
           <div className="strip" style={{ ['--n' as string]: 6 }}>
             <div className="cell">
-              <span className="label">celkem</span>
+              <span className="label">Celkem</span>
               <span className="value">{fmtHours(cur.total)}</span>
               <span className="foot">
                 <Delta cur={cur.total} prev={prev.total} />
               </span>
             </div>
             <div className="cell">
-              <span className="label">aktivní dny</span>
+              <span className="label">Aktivní dny</span>
               <span className="value">
                 {cur.activeDays}
                 <small>/{cur.days}</small>
@@ -138,19 +138,19 @@ export function ReportPage() {
               <span className="foot">{Math.round(cur.consistency * 100)} % pravidelnost</span>
             </div>
             <div className="cell">
-              <span className="label">ø na aktivní den</span>
+              <span className="label">Ø na aktivní den</span>
               <span className="value">{fmtDuration(cur.avgPerActiveDay, { short: true })}</span>
               <span className="foot">
                 <Delta cur={cur.avgPerActiveDay} prev={prev.avgPerActiveDay} />
               </span>
             </div>
             <div className="cell">
-              <span className="label">ø blok</span>
+              <span className="label">Ø blok</span>
               <span className="value">{fmtDuration(cur.avgSession, { short: true })}</span>
               <span className="foot">{cur.sessions} sezení</span>
             </div>
             <div className="cell">
-              <span className="label">soustředění</span>
+              <span className="label">Soustředění</span>
               <span className="value">
                 {cur.focus ? cur.focus.toFixed(1) : '—'}
                 <small>/5</small>
@@ -158,7 +158,7 @@ export function ReportPage() {
               <span className="foot">{prev.focus && cur.focus ? `minule ${prev.focus.toFixed(1)}` : 'průměr hodnocení'}</span>
             </div>
             <div className="cell">
-              <span className="label">nejdelší série</span>
+              <span className="label">Nejdelší série</span>
               <span className="value">
                 {cur.longestStreak}
                 <small> d</small>
@@ -172,9 +172,7 @@ export function ReportPage() {
           <div className="g12">
             <div className="card c-5 xl-4">
               <div className="card-head">
-                <h2 className="row" style={{ gap: 7 }}>
-                  <Sparkles size={14} color="var(--accent)" /> Postřehy
-                </h2>
+                <h2>Postřehy</h2>
               </div>
               <ol className="insights">
                 {notes.map((n) => (
@@ -213,9 +211,9 @@ export function ReportPage() {
                 <thead>
                   <tr>
                     <th></th>
-                    <th className="r">čas</th>
-                    <th className="r">podíl</th>
-                    <th className="r">focus</th>
+                    <th className="r">Čas</th>
+                    <th className="r">Podíl</th>
+                    <th className="r">Soustředění</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -278,27 +276,27 @@ export function ReportPage() {
 
           <div className="strip" style={{ ['--n' as string]: 5 }}>
             <div className="cell">
-              <span className="label">hluboká práce</span>
+              <span className="label">Hluboká práce</span>
               <span className="value">{Math.round(cur.deepShare * 100)} %</span>
               <span className="foot">času v blocích 45+ min</span>
             </div>
             <div className="cell">
-              <span className="label">vyrušení / hod</span>
+              <span className="label">Vyrušení za hodinu</span>
               <span className="value">{cur.interruptionsPerHour.toFixed(1)}</span>
               <span className="foot">{prev.sessions ? `minule ${prev.interruptionsPerHour.toFixed(1)}` : '—'}</span>
             </div>
             <div className="cell">
-              <span className="label">plnění plánu</span>
+              <span className="label">Plnění plánu</span>
               <span className="value">{cur.planAdherence == null ? '—' : `${Math.round(cur.planAdherence * 100)} %`}</span>
               <span className="foot">{cur.plannedSec ? `naplánováno ${fmtDuration(cur.plannedSec, { short: true })}` : 'bez plánu'}</span>
             </div>
             <div className="cell">
-              <span className="label">témata</span>
+              <span className="label">Témata</span>
               <span className="value">{topicsStudied}</span>
               <span className="foot">různých témat</span>
             </div>
             <div className="cell">
-              <span className="label">nejsilnější den</span>
+              <span className="label">Nejsilnější den</span>
               <span className="value">{cur.bestDay ? fmtDuration(cur.bestDay.sec, { short: true }) : '—'}</span>
               <span className="foot">
                 {cur.bestDay ? new Date(cur.bestDay.key).toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }) : ''}

@@ -22,12 +22,10 @@ import { DayPlanModal } from '../dayplan/DayPlanModal';
 import { pendingSuggestions } from '../../lib/calibrate';
 import './dashboard.css';
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 5) return 'Dobrou noc';
-  if (h < 10) return 'Dobré ráno';
-  if (h < 18) return 'Dobrý den';
-  return 'Dobrý večer';
+/** Dnešní datum jako nadpis přehledu („Sobota 10. října“). */
+function todayTitle() {
+  const s = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 const MONTHS_GEN = ['leden', 'únor', 'březen', 'duben', 'květen', 'červen', 'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec'];
@@ -140,11 +138,10 @@ export function Dashboard() {
     <div className="stack loose">
       <div className="page-head">
         <div>
-          <div className="label eyebrow">{new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-          <h1>{greeting()}</h1>
+          <h1>{todayTitle()}</h1>
         </div>
         {timer.state.status === 'idle' && (
-          <button className="btn primary" onClick={() => navigate('casovac')}>
+          <button className="btn" onClick={() => navigate('casovac')}>
             <Play size={14} fill="currentColor" /> Začít učení
           </button>
         )}
@@ -174,7 +171,7 @@ export function Dashboard() {
             <div className="banner">
               <Sunrise size={16} />
               <span className="grow">Dobré ráno – naplánuj si dnešek. Navrhnu bloky podle zkoušek, opakování a cílů, ty jen potvrdíš.</span>
-              <button className="btn sm primary" onClick={() => setPlanOpen(true)}>
+              <button className="btn sm" onClick={() => setPlanOpen(true)}>
                 Naplánovat den
               </button>
               <button className="btn ghost icon sm" onClick={dismissMorning} aria-label="Skrýt">
@@ -216,7 +213,7 @@ export function Dashboard() {
           )}
           {thisWeekReflection && (
             <div className="intent">
-              <span className="label">tento týden</span>
+              <span className="label">Tento týden</span>
               <span>{thisWeekReflection.focusNext}</span>
             </div>
           )}
@@ -225,7 +222,7 @@ export function Dashboard() {
 
       <div className="strip" style={{ ['--n' as string]: 5 }}>
         <div className="cell">
-          <span className="label">dnes</span>
+          <span className="label">Dnes</span>
           <span className="value">{fmtDuration(todaySec, { short: true })}</span>
           {goal > 0 ? (
             <div className="stack tight" style={{ gap: 5 }}>
@@ -237,7 +234,7 @@ export function Dashboard() {
           )}
         </div>
         <div className="cell">
-          <span className="label">tento týden</span>
+          <span className="label">Tento týden</span>
           <span className="value">{fmtDuration(weekSec, { short: true })}</span>
           <span className="foot">
             {delta == null ? (
@@ -253,7 +250,7 @@ export function Dashboard() {
           </span>
         </div>
         <div className="cell">
-          <span className="label">série</span>
+          <span className="label">Série</span>
           <span className="value">
             {current}
             <small> {plural(current, 'den', 'dny', 'dní')}</small>
@@ -261,7 +258,7 @@ export function Dashboard() {
           <span className="foot">rekord {best}</span>
         </div>
         <div className="cell">
-          <span className="label">soustředění · 7 dní</span>
+          <span className="label">Soustředění · 7 dní</span>
           <span className="value">
             {focus7 ? focus7.toFixed(1) : '—'}
             {focus7 && <small>/5</small>}
@@ -269,10 +266,8 @@ export function Dashboard() {
           <span className="foot">{focus7 ? 'průměr hodnocení' : 'hodnoť bloky po dokončení'}</span>
         </div>
         <div className="cell">
-          <span className="label">k zopakování</span>
-          <span className="value" style={{ color: dueTopics.length ? 'var(--accent)' : undefined }}>
-            {dueTopics.length}
-          </span>
+          <span className="label">K zopakování</span>
+          <span className="value">{dueTopics.length}</span>
           <span className="foot">
             <a href="#/opakovani">{dueTopics.length ? 'otevřít opakování' : 'vše hotovo'}</a>
           </span>
@@ -290,7 +285,7 @@ export function Dashboard() {
           <div className="dash-timer-body">
             <TimerRing size={210} />
             {timer.state.status === 'idle' && !timer.state.subjectId ? (
-              <button className="btn primary" onClick={() => navigate('casovac')}>
+              <button className="btn" onClick={() => navigate('casovac')}>
                 Vybrat předmět
               </button>
             ) : (
@@ -478,7 +473,7 @@ export function Dashboard() {
                     <th>Předmět</th>
                     <th>Téma</th>
                     <th>Režim</th>
-                    <th className="r">Focus</th>
+                    <th className="r">Soustředění</th>
                     <th className="r">Čas</th>
                   </tr>
                 </thead>

@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { AlertTriangle, CheckCircle2, Info, Layers, Plug, Plus, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, Plug, Plus, RefreshCw } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { SUBJECT_COLORS, alive, uid } from '../../data/schema';
 import { Switch } from '../../components/ui';
@@ -57,15 +57,13 @@ export function AnkiSettings() {
   return (
     <div className="card">
       <div className="card-head">
-        <h2 className="row" style={{ gap: 8 }}>
-          <Layers size={15} /> Anki
-        </h2>
+        <h2>Anki</h2>
         {status.state === 'ok' ? (
           <span className="chip ok">
             <CheckCircle2 size={12} /> připojeno {fmtTime(status.at)}
           </span>
         ) : status.state === 'syncing' ? (
-          <span className="chip accent">připojuji…</span>
+          <span className="chip">připojuji…</span>
         ) : cfg.enabled ? (
           <span className="chip warn">nepřipojeno</span>
         ) : (
@@ -138,7 +136,7 @@ export function AnkiSettings() {
             {snap && snap.decks.length > 0 && (
               <div className="stack tight">
                 <div className="row between">
-                  <span className="label">balíček → předmět</span>
+                  <span className="label">Balíček → předmět</span>
                   {unmapped.length > 0 && (
                     <button className="btn sm" onClick={createAllMissing}>
                       <Plus size={13} /> Založit předměty pro {unmapped.length} {plural(unmapped.length, 'balíček', 'balíčky', 'balíčků')}

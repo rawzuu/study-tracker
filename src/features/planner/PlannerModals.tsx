@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CalendarCheck, Check, Download, Play, Sparkles, Trash2 } from 'lucide-react';
+import { CalendarCheck, Check, Download, Play, Trash2 } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { Exam, PlanBlock, alive, uid } from '../../data/schema';
 import { Field, Modal, Switch, useToast } from '../../components/ui';
@@ -248,9 +248,7 @@ export function ExamModal({ exam, onClose }: { exam?: Exam; onClose: () => void 
         <div className="card" style={{ background: 'var(--surface-2)', boxShadow: 'none' }}>
           <div className="row between">
             <div>
-              <b className="row" style={{ gap: 6 }}>
-                <Sparkles size={15} color="var(--accent)" /> Rozložené opakování
-              </b>
+              <b>Rozložené opakování</b>
               <p className="small muted">
                 Naplánuje opakování s rozšiřujícími se rozestupy (spacing effect, Cepeda et al. 2008). Hustěji těsně před
                 zkouškou, řidčeji dál od ní.
@@ -279,7 +277,7 @@ export function ExamModal({ exam, onClose }: { exam?: Exam; onClose: () => void 
               ) : (
                 <div className="row wrap" style={{ gap: 6 }}>
                   {slots.map((s) => (
-                    <span key={s.day} className="chip accent">
+                    <span key={s.day} className="chip">
                       {new Date(s.day).toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' })} · −{s.daysBefore} d
                     </span>
                   ))}

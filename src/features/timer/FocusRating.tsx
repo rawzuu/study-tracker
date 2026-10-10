@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Brain } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { Modal } from '../../components/ui';
 import { fmtDuration } from '../../lib/time';
@@ -80,10 +79,7 @@ export function AfterBlockModal() {
 
         {askRecall && (
           <div className="stack tight">
-            <div className="row" style={{ gap: 7 }}>
-              <Brain size={15} color="var(--accent)" />
-              <b style={{ fontWeight: 550 }}>Co si pamatuješ? Bez koukání do materiálů.</b>
-            </div>
+            <b style={{ fontWeight: 550 }}>Co si pamatuješ? Bez koukání do materiálů.</b>
             <textarea
               className="input"
               autoFocus
