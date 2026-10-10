@@ -228,17 +228,18 @@ export interface AppData {
 export const COLLECTIONS = ['subjects', 'sessions', 'planBlocks', 'exams', 'presets', 'topics', 'reflections', 'anki', 'timetables', 'achievements'] as const;
 export type CollectionKey = (typeof COLLECTIONS)[number];
 
+/** Nabídka barev pro nové předměty – tlumené tóny se stejným jasem (sedí k vzhledu „Deník“). Barvy existujících předmětů se nemění. */
 export const SUBJECT_COLORS = [
-  '#7c8cff', // indigo
-  '#3dd68c', // green
-  '#f472b6', // pink
-  '#5eb1ef', // blue
-  '#ffb224', // amber
-  '#a78bfa', // violet
-  '#ff7a59', // coral
-  '#2ec8b6', // teal
-  '#e5e5e5', // light
-  '#c2a878', // sand
+  '#7d9cc0', // břidlicová modrá
+  '#8fae8b', // šalvěj
+  '#d4a35a', // okr
+  '#c98b8b', // hlína
+  '#a495c2', // vřes
+  '#6fb0a8', // mořská zeleň
+  '#d08a64', // terakota
+  '#b4a46a', // olivová
+  '#c79bb8', // lila
+  '#9aa3ad', // šedá
 ];
 
 export function defaultSettings(): Settings {

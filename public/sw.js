@@ -1,6 +1,6 @@
 // Jednoduchý service worker: síť má přednost, cache slouží jako záloha pro offline.
 // Díky "network-first" se nová verze aplikace projeví hned po nasazení.
-const CACHE = 'study-tracker-v2.5.1';
+const CACHE = 'study-tracker-v2.6.0';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));

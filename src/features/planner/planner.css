@@ -1,6 +1,15 @@
 .planner-card {
   padding-bottom: 10px;
 }
+/* Hlavička kalendáře: rozsah týdne na jeden řádek, ovládání se zalomí pod něj */
+.cal-head {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.cal-head h2 {
+  font-size: 21px;
+  white-space: nowrap;
+}
 .week-scroll-x {
   overflow-x: auto;
   margin: 0 -6px;

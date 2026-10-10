@@ -31,7 +31,8 @@ echarts.use([
 
 export const ThemeContext = createContext<ResolvedTheme>('dark');
 
-export const SANS = "'Geist', -apple-system, sans-serif";
+export const SANS = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif";
+export const SERIF = "'Newsreader', 'New York', Georgia, serif";
 
 export interface ChartColors {
   text: string;
@@ -66,7 +67,8 @@ export function chartColors(): ChartColors {
     text3: cssVar('--text-3'),
     line: cssVar('--line'),
     lineStrong: cssVar('--line-strong'),
-    panel: cssVar('--panel'),
+    // Grafy leží přímo na pozadí stránky (sekce nemají vlastní panel) – mezery mezi dílky v barvě pozadí.
+    panel: cssVar('--bg'),
     panel2: cssVar('--panel-2'),
     panel3: cssVar('--panel-3'),
     accent: cssVar('--accent'),
@@ -102,7 +104,7 @@ export function Chart({ option, height = 260 }: { option: EChartsCoreOption; hei
     inst.current = echarts.init(el.current, undefined, { renderer: 'canvas' });
     const ro = new ResizeObserver(() => inst.current?.resize());
     ro.observe(el.current);
-    // Po načtení webfontů graf překreslíme, aby popisky použily Geist.
+    // Po načtení webfontů graf překreslíme, aby popisky použily správné písmo.
     document.fonts?.ready.then(() => inst.current?.resize()).catch(() => {});
     return () => {
       ro.disconnect();

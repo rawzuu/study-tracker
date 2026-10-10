@@ -8,7 +8,7 @@ import { useStore } from '../../data/store';
 import { Session, alive, uid } from '../../data/schema';
 import { Empty, Field, Modal } from '../../components/ui';
 import { useRemoveWithUndo } from '../../components/undo';
-import { dayKey, fmtDayLabel, fmtDuration, fmtTime, fromLocalInput, toLocalInput } from '../../lib/time';
+import { capitalize, dayKey, fmtDayLabel, fmtDuration, fmtTime, fromLocalInput, toLocalInput } from '../../lib/time';
 import { totalSec } from '../../lib/stats';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
 import { modeName } from '../timer/modes';
@@ -167,7 +167,7 @@ export function HistoryPage() {
         groups.slice(0, limit).map(([day, list]) => (
           <div className="card" key={day}>
             <div className="card-head">
-              <h2 style={{ textTransform: 'capitalize' }}>{fmtDayLabel(list[0].start)}</h2>
+              <h2>{capitalize(fmtDayLabel(list[0].start))}</h2>
               <span className="chip num">{fmtDuration(totalSec(list))}</span>
             </div>
             <div className="list">

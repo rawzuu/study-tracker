@@ -77,6 +77,21 @@ export function fmtHours(sec: number): string {
   return `${(sec / 3600).toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} h`;
 }
 
+/** Číslo týdne podle ISO 8601 (týden začíná pondělím, 1. týden obsahuje 4. leden). */
+export function isoWeek(t: number): number {
+  const d = new Date(t);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  const w1 = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d.getTime() - w1.getTime()) / DAY - 3 + ((w1.getDay() + 6) % 7)) / 7);
+}
+
+/** Hodiny a minuty pro velká čísla: „1:29“. */
+export function fmtHM(sec: number): string {
+  const m = Math.floor(Math.max(0, sec) / 60);
+  return `${Math.floor(m / 60)}:${pad(m % 60)}`;
+}
+
 /** Odpočet "24:13" nebo "1:02:05" */
 export function fmtClock(ms: number): string {
   const total = Math.max(0, Math.round(ms / 1000));
@@ -102,6 +117,9 @@ export function fmtDayLabel(t: number): string {
   if (d === addDays(today, 1)) return 'Zítra';
   return new Date(t).toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
 }
+
+/** První písmeno velké („čtvrtek 8. října“ → „Čtvrtek 8. října“) – měsíce zůstanou malými písmeny. */
+export const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** Hodnota pro <input type="datetime-local"> */
 export function toLocalInput(t: number): string {

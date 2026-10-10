@@ -1,5 +1,5 @@
 import type { EChartsCoreOption } from 'echarts/core';
-import { ChartColors, SANS, axisLabel, tooltipBase } from '../../components/Chart';
+import { ChartColors, SANS, SERIF, axisLabel, tooltipBase } from '../../components/Chart';
 import { addDays, dayKey, fmtDuration, startOfDay, WEEKDAYS_SHORT } from '../../lib/time';
 
 /**
@@ -199,7 +199,7 @@ export function donut(c: ChartColors, items: { name: string; color: string; min:
       subtext: 'celkem',
       left: 'center',
       top: '38%',
-      textStyle: { color: c.text, fontFamily: SANS, fontSize: 20, fontWeight: 500 },
+      textStyle: { color: c.text, fontFamily: SERIF, fontSize: 24, fontWeight: 400 },
       subtextStyle: { color: c.text3, fontFamily: SANS, fontSize: 11 },
       itemGap: 4,
     },

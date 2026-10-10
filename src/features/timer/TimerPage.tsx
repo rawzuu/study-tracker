@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BellOff, Check, Coffee, Maximize2, Minimize2, Pause, Play, SkipForward, Square } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { NoiseType, alive } from '../../data/schema';
-import { fmtClock, fmtDuration, startOfDay } from '../../lib/time';
+import { fmtClock, fmtHM, startOfDay } from '../../lib/time';
 import { inRange, totalSec } from '../../lib/stats';
 import { NOISE_LABEL, startNoise, stopNoise } from '../../lib/noise';
 import { unlockAudio } from '../../lib/alerts';
@@ -13,7 +13,16 @@ import { useTimer } from './TimerContext';
 import { NextUpInline } from '../recommend/NextUp';
 import './timer.css';
 
-/** Ciferník s ryskami po minutách – jako stopky. */
+/** Oblouk kruhu (úhly ve stupních, 0° = vpravo, po směru hodin). */
+function arcPath(cx: number, r: number, from: number, to: number) {
+  const pt = (deg: number) => {
+    const a = (deg * Math.PI) / 180;
+    return `${(cx + r * Math.cos(a)).toFixed(2)} ${(cx + r * Math.sin(a)).toFixed(2)}`;
+  };
+  return `M${pt(from)}A${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${pt(to)}`;
+}
+
+/** Kruh z dílků se stupnicí v minutách. Odpočet = délka fáze, stopky = jedna hodina. */
 export function TimerRing({ size = 340 }: { size?: number }) {
   const { state, mode, elapsedMs, remainingMs, progress } = useTimer();
   const isBreak = state.phase !== 'work';
@@ -23,46 +32,44 @@ export function TimerRing({ size = 340 }: { size?: number }) {
   const display = idle ? fmtClock((mode.workMin ?? 0) * 60_000) : countUp ? fmtClock(elapsedMs) : fmtClock(remainingMs ?? 0);
   const label = idle ? 'Připraveno' : state.phase === 'work' ? 'Učení' : state.phase === 'long' ? 'Dlouhá pauza' : 'Pauza';
 
-  const V = 200; // viewBox
+  const phaseMs = idle ? (mode.workMin ?? 0) * 60_000 : (state.phaseDurationMs ?? elapsedMs + (remainingMs ?? 0));
+  const totalMin = countUp ? 60 : Math.max(1, Math.round(phaseMs / 60_000));
+  // Jeden dílek = minuta; u krátkých pauz půl minuty, u dlouhých bloků víc minut (max. ~60 dílků).
+  const perSeg = totalMin < 10 ? 0.5 : totalMin > 60 ? Math.ceil(totalMin / 60) : 1;
+  const n = Math.max(1, Math.round(totalMin / perSeg));
+  const labelStep = totalMin <= 10 ? 1 : totalMin <= 30 ? 5 : totalMin <= 60 ? (countUp ? 15 : 10) : totalMin <= 120 ? 15 : 30;
+  const done = p * n;
+
+  const V = 200;
   const cx = V / 2;
-  const rTicks = 96;
-  const rArc = 84;
-  const circ = 2 * Math.PI * rArc;
-  const ticks = Array.from({ length: 60 }, (_, i) => {
-    const a = (i / 60) * Math.PI * 2 - Math.PI / 2;
-    const major = i % 5 === 0;
-    const r1 = rTicks - (major ? 7 : 3.5);
-    const lit = i / 60 < p;
-    return (
-      <line
-        key={i}
-        x1={cx + Math.cos(a) * r1}
-        y1={cx + Math.sin(a) * r1}
-        x2={cx + Math.cos(a) * rTicks}
-        y2={cx + Math.sin(a) * rTicks}
-        className={`tick ${major ? 'major' : ''} ${lit ? 'lit' : ''}`}
-      />
-    );
+  const r = 80;
+  const step = 360 / n;
+  const gap = Math.min(1.6, step * 0.22);
+  const segs = Array.from({ length: n }, (_, i) => {
+    const from = -90 + i * step + gap / 2;
+    const to = -90 + (i + 1) * step - gap / 2;
+    const cls = i < Math.floor(done) ? 'lit' : i === Math.floor(done) && done > 0 && done < n ? 'now' : '';
+    return <path key={i} d={arcPath(cx, r, from, to)} className={`seg ${cls}`} />;
   });
+  const labels: { m: number; x: number; y: number }[] = [];
+  for (let m = 0; m < totalMin; m += labelStep) {
+    const a = ((-90 + (m / totalMin) * 360) * Math.PI) / 180;
+    labels.push({ m, x: cx + 94 * Math.cos(a), y: cx + 94 * Math.sin(a) + 2.6 });
+  }
 
   return (
     <div className={`ring ${isBreak ? 'is-break' : ''} ${state.status}`} style={{ width: size }}>
-      <svg viewBox={`0 0 ${V} ${V}`}>
-        <g>{ticks}</g>
-        <circle cx={cx} cy={cx} r={rArc} className="ring-track" />
-        <circle
-          cx={cx}
-          cy={cx}
-          r={rArc}
-          className="ring-progress"
-          strokeDasharray={circ}
-          strokeDashoffset={circ * (1 - p)}
-          transform={`rotate(-90 ${cx} ${cx})`}
-        />
+      <svg viewBox={`0 0 ${V} ${V}`} aria-hidden="true">
+        <g>{segs}</g>
+        {labels.map((l) => (
+          <text key={l.m} x={l.x} y={l.y} className="ring-label" textAnchor="middle">
+            {l.m}
+          </text>
+        ))}
       </svg>
       <div className="ring-center">
-        <span className="ring-phase label">{label}</span>
-        <div className="ring-time num">{display}</div>
+        <span className="ring-phase">{label}</span>
+        <div className="ring-time">{display}</div>
         <div className="ring-sub">
           <span className="label">{mode.name}</span>
           {mode.kind === 'interval' && mode.roundsBeforeLong < 99 && (
@@ -233,11 +240,11 @@ export function TimerPage() {
           <div>
             <h1>Časovač</h1>
           </div>
-          <div className="row">
+          <div className="row" style={{ alignItems: 'baseline' }}>
             <span className="label">Dnes</span>
-            <span className="num" style={{ fontSize: 15 }}>
-              {fmtDuration(todaySec, { short: true })}
-              {goal > 0 && <span className="faint"> / {fmtDuration(goal, { short: true })}</span>}
+            <span className="serif" style={{ fontSize: 24 }}>
+              {fmtHM(todaySec)}
+              {goal > 0 && <span className="faint" style={{ fontSize: 16 }}> ze {fmtHM(goal)}</span>}
             </span>
           </div>
         </div>

@@ -24,39 +24,32 @@
   width: 100%;
   height: 100%;
 }
-.tick {
+/* Dílky kruhu: hotové jantarově, právě běžící poloprůhledně, zbytek tmavě */
+.seg {
+  fill: none;
   stroke: var(--line-strong);
-  stroke-width: 0.8;
-  stroke-linecap: round;
+  stroke-width: 9;
 }
-.tick.major {
+.seg.lit {
+  stroke: var(--accent);
+}
+.seg.now {
+  stroke: var(--accent);
+  opacity: 0.45;
+}
+.ring.is-break .seg.lit,
+.ring.is-break .seg.now {
+  stroke: var(--break);
+}
+.ring.paused .seg.lit,
+.ring.paused .seg.now {
   stroke: var(--text-3);
-  stroke-width: 1.1;
 }
-.tick.lit {
-  stroke: var(--accent);
-}
-.is-break .tick.lit {
-  stroke: var(--break);
-}
-.ring-track {
-  fill: none;
-  stroke: var(--panel-3);
-  stroke-width: 2;
-}
-.ring-progress {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.35s linear;
-}
-.ring.is-break .ring-progress {
-  stroke: var(--break);
-}
-.ring.paused .ring-progress,
-.ring.paused .tick.lit {
-  opacity: 0.4;
+.ring-label {
+  fill: var(--text-3);
+  font-family: var(--font);
+  font-size: 7.5px;
+  font-variant-numeric: tabular-nums;
 }
 .ring-center {
   position: absolute;
@@ -69,6 +62,9 @@
 }
 /* Nápis nad časem: jantarově jen když blok běží, jinak neutrálně. */
 .ring-phase {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
   color: var(--text-3);
 }
 .ring.running .ring-phase {
@@ -78,10 +74,11 @@
   color: var(--break);
 }
 .ring-time {
-  font-family: var(--mono);
-  font-size: clamp(46px, 11vw, 76px);
+  font-family: var(--serif);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-size: clamp(56px, 13vw, 84px);
   font-weight: 400;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.02em;
   line-height: 1;
 }
 .ring.paused .ring-time {
@@ -101,7 +98,7 @@
   width: 14px;
   height: 3px;
   border-radius: 1px;
-  background: var(--panel-3);
+  background: var(--line-strong);
 }
 .rounds i.on {
   background: var(--accent);

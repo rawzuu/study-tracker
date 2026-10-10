@@ -1,36 +1,37 @@
 /* ============================================================
-   Study Tracker v2 – „přesný nástroj“
-   Grafitová černá, jeden jantarový akcent jen pro akce a „teď“,
-   čísla se stejně širokými číslicemi (monospace jen časovač),
-   tenké linky místo stínů. Tmavý režim je primární.
+   Study Tracker – „Deník“ (od v2.6)
+   Teplá tmavá, patkové písmo (Newsreader) pro nadpisy a velká čísla,
+   systémové písmo pro text, sekce bez rámečků oddělené tenkými linkami.
+   Jeden jantarový akcent jen pro akce a „teď“. Tmavý režim je primární.
    ============================================================ */
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0a0a0a;
-  --bg-side: #0c0c0c;
-  --panel: #111111;
-  --panel-2: #161616;
-  --panel-3: #1d1d1d;
-  --line: #222222;
-  --line-strong: #2f2f2f;
-  --text: #ededed;
-  --text-2: #a1a1a1;
-  --text-3: #6b6b6b;
-  --accent: #ffb224;
-  --accent-hover: #ffc04a;
-  --accent-ink: #1a1100;
-  --accent-soft: rgba(255, 178, 36, 0.1);
-  --accent-line: rgba(255, 178, 36, 0.38);
-  --break: #3dd68c;
-  --break-soft: rgba(61, 214, 140, 0.1);
-  --success: #3dd68c;
-  --warn: #ff8b3e;
-  --danger: #ff6369;
-  --danger-soft: rgba(255, 99, 105, 0.1);
-  --heat-0: #191919;
-  --overlay: rgba(0, 0, 0, 0.72);
-  --shadow-pop: 0 0 0 1px var(--line-strong), 0 24px 60px rgba(0, 0, 0, 0.6);
+  --bg: #12110f;
+  --bg-side: #12110f;
+  --panel: #1a1916;
+  --panel-2: #201e1b;
+  --panel-3: #282622;
+  --line: #22201d;
+  --line-strong: #302d29;
+  --text: #ebe6dd;
+  --text-2: #a39d92;
+  --text-3: #837d73;
+  --accent: #e3a641;
+  --accent-hover: #ecb55c;
+  --accent-ink: #1c1206;
+  --accent-soft: rgba(227, 166, 65, 0.12);
+  --accent-line: rgba(227, 166, 65, 0.42);
+  --break: #8fae8b;
+  --break-soft: rgba(143, 174, 139, 0.12);
+  --focus: #9db8d9;
+  --success: #8fae8b;
+  --warn: #d9925a;
+  --danger: #e0786b;
+  --danger-soft: rgba(224, 120, 107, 0.1);
+  --heat-0: #1e1c19;
+  --overlay: rgba(8, 7, 6, 0.72);
+  --shadow-pop: 0 0 0 1px var(--line-strong), 0 24px 60px rgba(0, 0, 0, 0.55);
 
   /* kompatibilita se staršími názvy */
   --surface: var(--panel);
@@ -45,39 +46,41 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f6f6f4;
-  --bg-side: #f1f1ee;
-  --panel: #ffffff;
-  --panel-2: #f6f6f4;
-  --panel-3: #ececea;
-  --line: #e4e4e0;
-  --line-strong: #d3d3ce;
-  --text: #121212;
-  --text-2: #5b5b5b;
-  --text-3: #8e8e8a;
-  --accent: #c27803;
-  --accent-hover: #a86802;
+  --bg: #f6f3ee;
+  --bg-side: #f6f3ee;
+  --panel: #fbf9f5;
+  --panel-2: #efebe4;
+  --panel-3: #e6e1d8;
+  --line: #e4dfd6;
+  --line-strong: #d3ccc0;
+  --text: #1d1b18;
+  --text-2: #5f5a52;
+  --text-3: #767067;
+  --accent: #96620f;
+  --accent-hover: #7f530c;
   --accent-ink: #ffffff;
-  --accent-soft: rgba(194, 120, 3, 0.09);
-  --accent-line: rgba(194, 120, 3, 0.4);
-  --break: #15803d;
-  --break-soft: rgba(21, 128, 61, 0.08);
-  --success: #15803d;
-  --warn: #c2410c;
-  --danger: #dc2626;
-  --danger-soft: rgba(220, 38, 38, 0.07);
-  --heat-0: #eeeeeb;
-  --overlay: rgba(18, 18, 18, 0.32);
-  --shadow-pop: 0 0 0 1px var(--line-strong), 0 24px 60px rgba(0, 0, 0, 0.14);
+  --accent-soft: rgba(150, 98, 15, 0.09);
+  --accent-line: rgba(150, 98, 15, 0.4);
+  --break: #4f7a4b;
+  --break-soft: rgba(79, 122, 75, 0.09);
+  --focus: #4f6f93;
+  --success: #4f7a4b;
+  --warn: #a8571f;
+  --danger: #b5473a;
+  --danger-soft: rgba(181, 71, 58, 0.07);
+  --heat-0: #ebe6dd;
+  --overlay: rgba(29, 27, 24, 0.3);
+  --shadow-pop: 0 0 0 1px var(--line-strong), 0 24px 60px rgba(60, 45, 20, 0.14);
 }
 
 :root {
-  --font: 'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
-  --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-  --r: 10px;
-  --r-sm: 7px;
-  --side-w: 232px;
-  --gap: 14px;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'Helvetica Neue', system-ui, sans-serif;
+  --serif: 'Newsreader', 'New York', Georgia, 'Times New Roman', serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --r: 12px;
+  --r-sm: 8px;
+  --side-w: 220px;
+  --gap: 36px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -109,13 +112,22 @@ h3 {
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
+/* Nadpisy stránek a sekcí patkovým písmem */
 h1 {
-  font-size: 24px;
+  font-family: var(--serif);
+  font-size: 42px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
 }
 h2 {
   font-size: 14px;
   font-weight: 550;
   letter-spacing: -0.005em;
+}
+.serif {
+  font-family: var(--serif);
+  font-variant-numeric: lining-nums tabular-nums;
 }
 h3 {
   font-size: 14px;
@@ -201,7 +213,7 @@ input[type='range'] {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 18px 12px 14px;
+  padding: 30px 18px 16px 26px;
   border-right: 1px solid var(--line);
   background: var(--bg-side);
 }
@@ -209,30 +221,12 @@ input[type='range'] {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 2px 8px 22px;
-  font-family: var(--mono);
-  font-size: 13px;
+  padding: 0 0 18px;
+  font-family: var(--serif);
+  font-size: 22px;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--text);
-}
-.brand-mark {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  border: 1.5px solid var(--accent);
-  position: relative;
-  flex-shrink: 0;
-}
-.brand-mark::after {
-  content: '';
-  position: absolute;
-  inset: 3px 3px 3px 7px;
-  background: var(--accent);
-  border-radius: 1.5px;
-}
-.brand .slash {
-  color: var(--text-3);
 }
 
 .nav {
@@ -240,43 +234,42 @@ input[type='range'] {
   flex-direction: column;
   gap: 1px;
 }
-.nav-group {
-  padding: 16px 10px 6px;
+.nav-group,
+.nav-group.label {
+  padding: 16px 0 4px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14.5px;
+  font-weight: 400;
+  color: var(--text-3);
 }
+/* Nabídka jen textem – bez ikon, aktivní položka tučně */
 .nav a {
   position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: 6px;
+  min-height: 31px;
+  padding: 0;
   color: var(--text-2);
-  font-size: 13.5px;
-  font-weight: 450;
-  transition: background 0.12s, color 0.12s;
-}
-.nav a svg {
-  color: var(--text-3);
+  font-size: 14px;
+  font-weight: 400;
   transition: color 0.12s;
 }
 .nav a:hover {
-  background: var(--panel-2);
   color: var(--text);
   text-decoration: none;
 }
 .nav a.active {
-  background: var(--panel-3);
   color: var(--text);
-}
-.nav a.active svg {
-  color: var(--text);
+  font-weight: 600;
 }
 .nav .badge {
   margin-left: auto;
-  font-size: 11.5px;
+  font-size: 12px;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: var(--accent);
+  color: var(--text-2);
 }
 
 .sidebar-footer {
@@ -291,7 +284,7 @@ input[type='range'] {
   width: 100%;
   max-width: 2200px;
   margin: 0 auto;
-  padding: 26px 36px 64px;
+  padding: 36px 48px 72px;
 }
 
 .page-head {
@@ -299,15 +292,15 @@ input[type='range'] {
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
 }
 .page-head .eyebrow {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .page-head p {
   color: var(--text-2);
-  margin-top: 5px;
+  margin-top: 8px;
   font-size: 13.5px;
 }
 
@@ -315,7 +308,7 @@ input[type='range'] {
 .g12 {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--gap);
+  gap: 40px 48px;
 }
 .c-2 { grid-column: span 2; }
 .c-3 { grid-column: span 3; }
@@ -342,7 +335,9 @@ input[type='range'] {
   .c-5, .c-6, .c-7, .c-8, .c-9 { grid-column: span 12; }
 }
 @media (max-width: 760px) {
-  .g12 > * { grid-column: span 12 !important; }
+  /* Jeden sloupec – jinak by 11 mezer mezi sloupci roztáhlo stránku do šířky */
+  .g12 { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
+  .g12 > * { grid-column: auto !important; }
 }
 
 /* starší pomocné mřížky */
@@ -382,11 +377,12 @@ input[type='range'] {
 /* ============================================================
    Panely
    ============================================================ */
+/* Sekce: bez rámečku a pozadí, jen nadpis s linkou pod ním */
 .card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: 16px 18px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   min-width: 0;
 }
 .card.flush {
@@ -397,16 +393,20 @@ input[type='range'] {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 44px;
-  margin: -16px -18px 16px;
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--line);
+  min-height: 0;
+  margin: 0 0 10px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--line-strong);
 }
 .card.flush .card-head {
-  margin: 0;
+  margin: 0 0 10px;
 }
 .card-head h2 {
-  font-size: 13.5px;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 .card-head .sub {
   font-size: 12px;
@@ -422,34 +422,31 @@ input[type='range'] {
 }
 
 /* Pás metrik – jeden panel rozdělený tenkými linkami */
+/* Řádek čísel – bez rámečku, jen linky nahoře a dole */
 .strip {
   display: grid;
   grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  overflow: hidden;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
 }
 .strip > .cell {
-  padding: 15px 18px 16px;
-  border-left: 1px solid var(--line);
+  padding: 14px 20px 16px 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
 }
-.strip > .cell:first-child {
-  border-left: 0;
-}
 .cell .value {
-  font-size: 26px;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--serif);
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  font-variant-numeric: lining-nums tabular-nums;
   white-space: nowrap;
 }
 .cell .value small {
+  font-family: var(--font);
   font-size: 14px;
   color: var(--text-3);
   letter-spacing: 0;
@@ -473,13 +470,6 @@ input[type='range'] {
   .strip {
     grid-template-columns: repeat(min(var(--n, 4), 3), minmax(0, 1fr));
   }
-  .strip > .cell {
-    border-top: 1px solid var(--line);
-    margin-top: -1px;
-  }
-  .strip > .cell:nth-child(3n + 1) {
-    border-left: 0;
-  }
 }
 @media (max-width: 640px) {
   .card-head {
@@ -488,17 +478,11 @@ input[type='range'] {
   .strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .strip > .cell:nth-child(3n + 1) {
-    border-left: 1px solid var(--line);
-  }
-  .strip > .cell:nth-child(2n + 1) {
-    border-left: 0;
-  }
   .strip > .cell:last-child:nth-child(odd) {
     grid-column: span 2;
   }
   .cell .value {
-    font-size: 22px;
+    font-size: 28px;
   }
 }
 
@@ -507,10 +491,10 @@ input[type='range'] {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 10px 8px 14px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: var(--r-sm);
+  padding: 8px 10px 8px 16px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  border-radius: var(--r);
   font-size: 13.5px;
 }
 .banner > svg {
@@ -526,11 +510,11 @@ input[type='range'] {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: var(--r-sm);
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 999px;
   border: 1px solid var(--line-strong);
-  background: var(--panel-2);
+  background: transparent;
   color: var(--text);
   font: inherit;
   font-weight: 500;
@@ -540,7 +524,7 @@ input[type='range'] {
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 .btn:hover {
-  background: var(--panel-3);
+  background: var(--panel-2);
   text-decoration: none;
 }
 .btn:active {
@@ -585,17 +569,16 @@ input[type='range'] {
 }
 .btn.sm {
   height: 28px;
-  padding: 0 9px;
+  padding: 0 11px;
   font-size: 12.5px;
 }
 .btn.lg {
-  height: 42px;
-  padding: 0 20px;
-  font-size: 14px;
-  border-radius: 9px;
+  height: 44px;
+  padding: 0 22px;
+  font-size: 14.5px;
 }
 .btn.icon {
-  width: 32px;
+  width: 34px;
   padding: 0;
 }
 .btn.icon.sm {
@@ -624,11 +607,11 @@ input[type='range'] {
 select.input,
 textarea.input {
   width: 100%;
-  height: 34px;
-  padding: 0 11px;
+  height: 36px;
+  padding: 0 12px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line-strong);
-  background: var(--panel-2);
+  background: var(--panel);
   color: var(--text);
   font: inherit;
   font-size: 13.5px;
@@ -738,8 +721,8 @@ input[type='color'].input {
   scrollbar-width: none;
   padding: 2px;
   gap: 2px;
-  border-radius: var(--r-sm);
-  background: var(--panel);
+  border-radius: 999px;
+  background: transparent;
   border: 1px solid var(--line-strong);
 }
 .segmented::-webkit-scrollbar {
@@ -753,8 +736,8 @@ input[type='color'].input {
   font-size: 12.5px;
   font-weight: 500;
   height: 26px;
-  padding: 0 10px;
-  border-radius: 5px;
+  padding: 0 11px;
+  border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -771,8 +754,8 @@ input[type='color'].input {
   align-items: center;
   gap: 5px;
   height: 22px;
-  padding: 0 7px;
-  border-radius: 5px;
+  padding: 0 9px;
+  border-radius: 999px;
   font-size: 11.5px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -891,10 +874,10 @@ input[type='color'].input {
 }
 
 .callout {
-  padding: 11px 13px;
-  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  border-radius: var(--r);
   border: 1px solid var(--line-strong);
-  background: var(--panel-2);
+  background: var(--panel);
   color: var(--text);
   font-size: 13px;
   display: flex;
@@ -934,9 +917,9 @@ input[type='color'].input {
   max-height: calc(100vh - 32px);
   overflow: auto;
   background: var(--panel);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: var(--shadow-pop);
-  padding: 0 20px 20px;
+  padding: 0 22px 22px;
   animation: pop 0.18s var(--ease);
 }
 .modal.wide {
@@ -955,7 +938,10 @@ input[type='color'].input {
   z-index: 1;
 }
 .modal-head h2 {
-  font-size: 14px;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 .modal-foot {
   display: flex;
@@ -1075,8 +1061,8 @@ input[type='color'].input {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 10px 14px;
+  border-radius: var(--r);
   border: 1px solid var(--accent-line);
   background: var(--accent-soft);
   color: var(--text);
@@ -1087,8 +1073,9 @@ input[type='color'].input {
   border-color: var(--accent);
 }
 .mini-timer .num {
-  font-family: var(--mono);
-  font-size: 14px;
+  font-family: var(--serif);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-size: 18px;
   color: var(--accent);
 }
 .mini-timer.is-break {
@@ -1139,7 +1126,7 @@ input[type='color'].input {
     grid-column: auto;
   }
   h1 {
-    font-size: 21px;
+    font-size: 32px;
   }
   .mobile-nav {
     display: flex;
@@ -1159,15 +1146,18 @@ input[type='color'].input {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 3px;
-    font-size: 10px;
-    font-weight: 500;
+    min-height: 44px;
+    font-size: 13px;
+    font-weight: 400;
     color: var(--text-3);
-    padding: 5px 6px;
-    min-width: 54px;
+    padding: 4px 6px;
+    min-width: 56px;
   }
   .mobile-nav a.active {
     color: var(--text);
+    font-weight: 600;
   }
   .mobile-nav a:hover {
     text-decoration: none;
@@ -1198,12 +1188,8 @@ input[type='color'].input {
   .cols-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .card {
-    padding: 14px;
-  }
-  .card-head {
-    margin: -14px -14px 14px;
-    padding: 10px 14px;
+  .card-head h2 {
+    font-size: 20px;
   }
 }
 
@@ -1351,12 +1337,12 @@ input[type='color'].input {
 
 /* Nastavení: karty ve sloupcích, na širokém monitoru 2–3 vedle sebe */
 .masonry {
-  columns: 3 520px;
-  column-gap: var(--gap);
+  columns: 3 480px;
+  column-gap: 48px;
 }
 .masonry > .card {
   break-inside: avoid;
-  margin-bottom: var(--gap);
+  margin-bottom: 40px;
 }
 
 /* Hodnocení vybavení (FSRS) */
@@ -1422,7 +1408,6 @@ input[type='color'].input {
 }
 .menu-options summary::before {
   content: '+ ';
-  font-family: var(--mono);
 }
 .menu-options[open] summary::before {
   content: '− ';

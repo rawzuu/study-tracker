@@ -1,18 +1,4 @@
 import { ComponentType, useEffect, useMemo, useState } from 'react';
-import {
-  BarChart3,
-  BookMarked,
-  CalendarDays,
-  FileText,
-  History,
-  LayoutDashboard,
-  Menu,
-  NotebookPen,
-  Repeat,
-  Settings,
-  Timer,
-  Trophy,
-} from 'lucide-react';
 import { useStore } from './data/store';
 import { loadGithubConfig, tokenDaysLeft } from './data/github';
 import { alive } from './data/schema';
@@ -48,25 +34,24 @@ import { AchievementWatcher } from './features/achievements/AchievementWatcher';
 interface PageDef {
   id: string;
   label: string;
-  icon: ComponentType<{ size?: number; strokeWidth?: number }>;
   component: ComponentType;
   group: 'Učení' | 'Přehledy' | 'Nastavení' | null;
   mobile?: boolean; // zobrazit ve spodní liště na mobilu
 }
 
 const PAGES: PageDef[] = [
-  { id: 'prehled', label: 'Přehled', icon: LayoutDashboard, component: Dashboard, group: 'Učení', mobile: true },
-  { id: 'casovac', label: 'Časovač', icon: Timer, component: TimerPage, group: 'Učení', mobile: true },
-  { id: 'planovac', label: 'Kalendář', icon: CalendarDays, component: PlannerPage, group: 'Učení', mobile: true },
-  { id: 'opakovani', label: 'Opakování', icon: Repeat, component: TopicsPage, group: 'Učení' },
-  { id: 'statistiky', label: 'Statistiky', icon: BarChart3, component: StatsPage, group: 'Přehledy', mobile: true },
-  { id: 'report', label: 'Měsíční report', icon: FileText, component: ReportPage, group: 'Přehledy' },
-  { id: 'reflexe', label: 'Reflexe', icon: NotebookPen, component: ReflectionPage, group: 'Přehledy' },
-  { id: 'historie', label: 'Historie', icon: History, component: HistoryPage, group: 'Přehledy' },
-  { id: 'uspechy', label: 'Úspěchy', icon: Trophy, component: AchievementsPage, group: 'Přehledy' },
-  { id: 'predmety', label: 'Předměty', icon: BookMarked, component: SubjectsPage, group: 'Nastavení' },
-  { id: 'nastaveni', label: 'Nastavení', icon: Settings, component: SettingsPage, group: 'Nastavení' },
-  { id: 'vice', label: 'Více', icon: Menu, component: MorePage, group: null },
+  { id: 'prehled', label: 'Přehled', component: Dashboard, group: 'Učení', mobile: true },
+  { id: 'casovac', label: 'Časovač', component: TimerPage, group: 'Učení', mobile: true },
+  { id: 'planovac', label: 'Kalendář', component: PlannerPage, group: 'Učení', mobile: true },
+  { id: 'opakovani', label: 'Opakování', component: TopicsPage, group: 'Učení' },
+  { id: 'statistiky', label: 'Statistiky', component: StatsPage, group: 'Přehledy', mobile: true },
+  { id: 'report', label: 'Měsíční report', component: ReportPage, group: 'Přehledy' },
+  { id: 'reflexe', label: 'Reflexe', component: ReflectionPage, group: 'Přehledy' },
+  { id: 'historie', label: 'Historie', component: HistoryPage, group: 'Přehledy' },
+  { id: 'uspechy', label: 'Úspěchy', component: AchievementsPage, group: 'Přehledy' },
+  { id: 'predmety', label: 'Předměty', component: SubjectsPage, group: 'Nastavení' },
+  { id: 'nastaveni', label: 'Nastavení', component: SettingsPage, group: 'Nastavení' },
+  { id: 'vice', label: 'Více', component: MorePage, group: null },
 ];
 
 const GROUPS = ['Učení', 'Přehledy', 'Nastavení'] as const;
@@ -90,7 +75,7 @@ function NavLinks({ current }: { current: string }) {
           <div className="nav-group label">{g}</div>
           {PAGES.filter((p) => p.group === g && !hidden.has(p.id)).map((p) => (
             <a key={p.id} href={`#/${p.id}`} className={p.id === current ? 'active' : ''}>
-              <p.icon size={16} strokeWidth={1.75} /> {p.label}
+              {p.label}
               {p.id === 'opakovani' && due > 0 && <span className="badge">{due}</span>}
             </a>
           ))}
@@ -202,12 +187,7 @@ export function App() {
     <ThemeContext.Provider value={theme}>
       <div className="app">
         <aside className="sidebar">
-          <div className="brand">
-            <span className="brand-mark" />
-            <span>
-              study<span className="slash">/</span>tracker
-            </span>
-          </div>
+          <div className="brand">Study Tracker</div>
           <NavLinks current={page.id} />
           <div className="sidebar-footer">
             <MiniTimer />
@@ -232,7 +212,6 @@ export function App() {
               href={`#/${p.id}`}
               className={p.id === page.id || (p.id === 'vice' && !page.mobile && page.id !== 'vice') ? 'active' : ''}
             >
-              <p.icon size={20} strokeWidth={1.75} />
               {p.label}
             </a>
           ))}

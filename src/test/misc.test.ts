@@ -5,6 +5,7 @@ import { matchPlanBlocks } from '../features/planner/match';
 import { escapeHtml } from '../features/stats/charts';
 import { clusterReviews } from '../lib/anki';
 import { sessionsToCsv } from '../lib/csv';
+import { capitalize, fmtHM, isoWeek } from '../lib/time';
 import { D, H, M, NOW, block, data, session, subject } from './helpers';
 
 describe('úspěchy', () => {
@@ -58,5 +59,25 @@ describe('Anki a kalendář', () => {
     expect(matchPlanBlocks([b], 's', NOW + 10 * M, NOW + 50 * M)).toHaveLength(1);
     expect(matchPlanBlocks([b], 'jiný', NOW, NOW + H)).toHaveLength(0);
     expect(matchPlanBlocks([b], 's', NOW + 55 * M, NOW + 2 * H)).toHaveLength(0);
+  });
+});
+
+describe('formát čísel na přehledu', () => {
+  it('hodiny a minuty', () => {
+    expect(fmtHM(0)).toBe('0:00');
+    expect(fmtHM(89 * 60 + 59)).toBe('1:29');
+    expect(fmtHM(16 * 3600 + 30 * 60)).toBe('16:30');
+    expect(fmtHM(-5)).toBe('0:00');
+  });
+  it('číslo týdne podle ISO', () => {
+    expect(isoWeek(new Date(2026, 9, 10, 23, 30).getTime())).toBe(41);
+    expect(isoWeek(new Date(2026, 0, 1).getTime())).toBe(1); // čtvrtek
+    expect(isoWeek(new Date(2025, 11, 29).getTime())).toBe(1); // pondělí 1. týdne 2026
+    expect(isoWeek(new Date(2027, 0, 1).getTime())).toBe(53); // pátek patří k 53. týdnu 2026
+    expect(isoWeek(new Date(2026, 2, 29, 12).getTime())).toBe(13); // den změny času
+  });
+  it('velké písmeno jen na začátku', () => {
+    expect(capitalize('čtvrtek 8. října')).toBe('Čtvrtek 8. října');
+    expect(capitalize('')).toBe('');
   });
 });
