@@ -211,6 +211,8 @@ export interface Settings {
   blockDoneLogs: boolean; // „Hotovo“ u bloku plánu nabídne zapsat jeho čas jako odučený
   // v2.6.2+
   multiTopicReview: boolean; // blok „Opakování: A, B, C“ zapíše opakování všech témat, ne jen prvního
+  // v2.6.5+
+  seriesTimeoutMin: number; // po kolika minutách čekání na další blok se série časovače ukončí (0 = nikdy)
 }
 
 export interface AppData {
@@ -279,6 +281,7 @@ export function defaultSettings(): Settings {
     tokenWarning: true,
     blockDoneLogs: true,
     multiTopicReview: true,
+    seriesTimeoutMin: 20,
   };
 }
 

@@ -29,6 +29,7 @@ export interface TimerState {
   round: number;
   interruptions: number;
   workStartedAt: number | null;
+  readyAt?: number | null; // od kdy časovač čeká na další blok / pauzu (kvůli automatickému ukončení série)
 }
 
 const STORAGE_KEY = 'st.timer';
@@ -226,6 +227,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         phase,
         round,
         status: st.autoStartBreaks ? 'running' : 'ready',
+        readyAt: st.autoStartBreaks ? null : endAt,
         segmentStart: st.autoStartBreaks ? endAt : null,
         accumulated: 0,
         phaseDurationMs: breakMs,
@@ -250,6 +252,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       ...p,
       phase: 'work',
       status: auto ? 'running' : 'ready',
+      readyAt: auto ? null : endAt,
       segmentStart: auto ? endAt : null,
       accumulated: 0,
       phaseDurationMs: workDurationMs(m),
@@ -305,7 +308,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     setNow(t);
     setState((p) => {
       if (p.status === 'ready') {
-        return { ...p, status: 'running', segmentStart: t, accumulated: 0, workStartedAt: p.phase === 'work' ? t : null };
+        return { ...p, status: 'running', readyAt: null, segmentStart: t, accumulated: 0, workStartedAt: p.phase === 'work' ? t : null };
       }
       return {
         ...p,
@@ -359,7 +362,21 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     workStartedAt: null,
     planBlockId: undefined,
     extraTopics: undefined,
+    readyAt: null,
   });
+
+  // Série, která čeká na další blok déle než nastavenou dobu, se ukončí sama – jinak by časovač
+  // „mezi bloky“ zůstal viset třeba do druhého dne. Hotové bloky jsou už uložené, nic se neztratí.
+  const seriesTimeoutMin = settings.seriesTimeoutMin ?? 20;
+  useEffect(() => {
+    if (state.status !== 'ready' || !seriesTimeoutMin) return;
+    const since = state.readyAt ?? Date.now(); // stav uložený starší verzí čas nemá – počítá se od načtení
+    const id = window.setTimeout(
+      () => setState((p) => (p.status === 'ready' ? reset(p) : p)),
+      Math.max(0, since + seriesTimeoutMin * 60_000 - Date.now()),
+    );
+    return () => window.clearTimeout(id);
+  }, [state.status, state.readyAt, seriesTimeoutMin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setup = useCallback<TimerValue['setup']>((patch) => {
     setState((p) => (canSwitch(p) ? withConfig(p.status === 'ready' ? reset(p) : p, patch) : p));

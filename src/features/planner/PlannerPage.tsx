@@ -20,6 +20,7 @@ const DEFAULT_HOUR_FROM = 6; // mřížka začíná v 6:00, pokud nemáš nic d�
 const HOUR_TO = 24;
 const HOUR_H = 48;
 const SNAP_MIN = 15;
+const RESIZE_MIN = 5; // délka bloku tažením po 5 min
 
 type Layer = 'all' | 'plan' | 'done';
 
@@ -103,7 +104,7 @@ export function PlannerPage() {
   const [monthStart, setMonthStart] = useState(() => startOfMonth(Date.now()));
   const [modal, setModal] = useState<ModalState>(null);
   const [dayPlan, setDayPlan] = useState(false);
-  const [drag, setDrag] = useState<{ id: string; dayDelta: number; minDelta: number } | null>(null);
+  const [drag, setDrag] = useState<{ id: string; dayDelta: number; minDelta: number; durDelta?: number } | null>(null);
   const [now, setNow] = useState(Date.now());
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -207,6 +208,37 @@ export function PlannerPage() {
     el.addEventListener('pointercancel', up);
   };
 
+  /** Délka bloku tažením za spodní okraj (po 5 min, nejméně 10 min, nejvýš 12 h). */
+  const onResizeDown = (e: RPointerEvent<HTMLSpanElement>, b: PlanBlock) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation(); // jinak by se blok začal přesouvat
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    const sy = e.clientY;
+    let moved = false;
+    let last = 0;
+    const move = (ev: PointerEvent) => {
+      const dy = ev.clientY - sy;
+      if (!moved && Math.abs(dy) < 3) return;
+      moved = true;
+      const want = Math.round(((dy / HOUR_H) * 60) / RESIZE_MIN) * RESIZE_MIN;
+      last = Math.max(10 - b.durationMin, Math.min(12 * 60 - b.durationMin, want));
+      setDrag({ id: b.id, dayDelta: 0, minDelta: 0, durDelta: last });
+    };
+    const up = () => {
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+      setDrag(null);
+      if (!moved) return setModal({ kind: 'block', block: b });
+      if (last) upsert('planBlocks', { ...b, durationMin: b.durationMin + last });
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+  };
+
   const isThisWeek = weekStart === startOfWeek(now);
   const weekStudied = weekSessions.reduce((a, s) => a + s.durationSec, 0);
   const weekPlanned = blocks.reduce((a, b) => a + b.durationMin * 60, 0);
@@ -220,7 +252,7 @@ export function PlannerPage() {
           <h1>Kalendář</h1>
           <p>
             Plná barva = odučený čas, obrys = plán. Čas se zapíše z časovače{data.settings.blockDoneLogs !== false ? ', nebo tlačítkem Hotovo u bloku' : ''}. Klikni do prázdna pro
-            nový záznam, plán přesouvej tažením.
+            nový záznam, plán přesouvej tažením a délku měň tažením za spodní okraj.
           </p>
         </div>
         <div className="row wrap">
@@ -361,7 +393,10 @@ export function PlannerPage() {
                             const durMin = Math.max(1, (it.end - it.start) / MIN);
                             const { lane, lanes } = lay.get(it.id)!;
                             const dragging = it.block && drag?.id === it.block.id;
-                            const h = Math.max(20, (durMin / 60) * HOUR_H - 2);
+                            // při změně délky tažením roste jen poslední kus bloku (u bloku přes půlnoc ten ranní)
+                            const isEnd = !it.span || it.end === it.span[1];
+                            const grow = dragging && isEnd ? (drag!.durDelta ?? 0) : 0;
+                            const h = Math.max(20, ((durMin + grow) / 60) * HOUR_H - 2);
                             const style = {
                               top: (startMin / 60) * HOUR_H,
                               height: h,
@@ -403,9 +438,14 @@ export function PlannerPage() {
                                   {h >= 34 && <span>{it.title || 'plán'}</span>}
                                   {h >= 50 && (
                                     <span className="t">
-                                      {dragging ? fmtTime(addDays(b.start, drag!.dayDelta) + drag!.minDelta * MIN) : timeLabel}
+                                      {dragging && drag!.durDelta != null
+                                        ? `${fmtTime(b.start)}–${fmtTime(b.start + (b.durationMin + drag!.durDelta) * MIN)}`
+                                        : dragging
+                                          ? fmtTime(addDays(b.start, drag!.dayDelta) + drag!.minDelta * MIN)
+                                          : timeLabel}
                                     </span>
                                   )}
+                                  {isEnd && <span className="cal-resize" onPointerDown={(e) => onResizeDown(e, b)} aria-hidden="true" />}
                                 </div>
                               );
                             }

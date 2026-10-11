@@ -46,6 +46,17 @@ export function FeaturesSection() {
         <Row label="Blok s více tématy zapíše všechna" desc="Po bloku typu „Opakování: Derivace, Limity“ se zapíše opakování všech témat, ne jen prvního. V okně po bloku jde kterékoli odškrtnout.">
           <Switch checked={s.multiTopicReview !== false} onChange={(v) => setSettings({ multiTopicReview: v })} label="Blok s více tématy zapíše všechna" />
         </Row>
+        <Row label="Ukončit čekající časovač" desc="Když časovač mezi bloky čeká na „Další blok“ déle, sám se ukončí a uvolní tlačítka pro nové učení. Hotové bloky zůstávají uložené.">
+          <Segmented<string>
+            value={String(s.seriesTimeoutMin ?? 20)}
+            onChange={(v) => setSettings({ seriesTimeoutMin: Number(v) })}
+            options={[
+              { value: '0', label: 'nikdy' },
+              { value: '20', label: 'po 20 min' },
+              { value: '60', label: 'po hodině' },
+            ]}
+          />
+        </Row>
         <Row label="Dny volna v sérii" desc="Kolik dní bez učení za týden sérii nepřeruší.">
           <Segmented<string>
             value={String(s.streakRestDays ?? 0)}
