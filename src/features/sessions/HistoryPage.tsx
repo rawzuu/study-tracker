@@ -10,7 +10,7 @@ import { Empty, Field, Modal } from '../../components/ui';
 import { useRemoveWithUndo } from '../../components/undo';
 import { capitalize, dayKey, fmtDayLabel, fmtDuration, fmtTime, fromLocalInput, toLocalInput } from '../../lib/time';
 import { totalSec } from '../../lib/stats';
-import { blockTopic } from '../../lib/blockTopic';
+import { blockTopic, blockTopics } from '../../lib/blockTopic';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
 import { modeName } from '../timer/modes';
 import { FOCUS_LABELS } from '../timer/FocusRating';
@@ -46,6 +46,15 @@ export function SessionModal({
   const [note, setNote] = useState(session?.note ?? (planBlock && blockTopic(planBlock.title) !== planBlock.title.trim() ? planBlock.title : ''));
 
   const { data } = useStore();
+  // Blok „Opakování: A, B, C“: ostatní existující témata se zapíšou jako zopakovaná (jde odškrtnout).
+  const [dropped, setDropped] = useState<Set<string>>(() => new Set());
+  const extras =
+    planBlock && !session && data.settings.multiTopicReview !== false
+      ? blockTopics(planBlock.title)
+          .slice(1)
+          .map((n) => findTopic(data.topics, subjectId, n))
+          .filter((t, i, all): t is NonNullable<typeof t> => !!t && !t.mastered && t.name.toLocaleLowerCase('cs') !== topic.trim().toLocaleLowerCase('cs') && all.findIndex((x) => x?.id === t.id) === i)
+      : [];
   const save = () => {
     if (!subjectId || minutes <= 0) return;
     const s = fromLocalInput(start);
@@ -58,6 +67,7 @@ export function SessionModal({
       upsert('topics', next);
       topicId = next.id;
     }
+    for (const x of extras) if (!dropped.has(x.id)) upsert('topics', applyStudy(x, s + minutes * 60_000, 'ok', ctxFrom(data), { auto: true }));
     const durationSec = minutes * 60;
     // U časovačových sezení zachováme skutečný konec (včetně pauz), pokud se nezměnil začátek.
     const end = session && session.start === s ? Math.max(session.end, s + durationSec * 1000) : s + durationSec * 1000;
@@ -125,6 +135,28 @@ export function SessionModal({
         <Field label="Téma">
           <input className="input" value={topic} onChange={(e) => setTopic(e.target.value)} />
         </Field>
+        {extras.length > 0 && (
+          <div className="stack tight">
+            <span className="label">Další zopakovaná témata z bloku</span>
+            {extras.map((x) => (
+              <label key={x.id} className="row extra-topic">
+                <input
+                  type="checkbox"
+                  checked={!dropped.has(x.id)}
+                  onChange={(e) =>
+                    setDropped((cur) => {
+                      const next = new Set(cur);
+                      if (e.target.checked) next.delete(x.id);
+                      else next.add(x.id);
+                      return next;
+                    })
+                  }
+                />
+                <span>{x.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
         <div className="grid cols-2" style={{ gap: 10 }}>
           <Field label="Začátek">
             <input className="input" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />

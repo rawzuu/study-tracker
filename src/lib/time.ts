@@ -61,13 +61,12 @@ export function weekdayIdx(t: number | Date): number {
   return (new Date(t).getDay() + 6) % 7;
 }
 
-/** Délka v čitelném tvaru: "2 h 15 min", "45 min", "30 s" */
-export function fmtDuration(sec: number, opts: { short?: boolean } = {}): string {
+/** Délka v čitelném tvaru: "2 h 15 min", "45 min", "30 s" – jediný tvar v celé aplikaci. */
+export function fmtDuration(sec: number): string {
   const s = Math.max(0, Math.round(sec));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   if (h === 0 && m === 0) return s > 0 ? `${s} s` : '0 min';
-  if (opts.short) return h ? `${h}h ${pad(m)}m` : `${m}m`;
   if (h === 0) return `${m} min`;
   return m ? `${h} h ${m} min` : `${h} h`;
 }
@@ -89,12 +88,6 @@ export function isoWeek(t: number): number {
   d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
   const w1 = new Date(d.getFullYear(), 0, 4);
   return 1 + Math.round(((d.getTime() - w1.getTime()) / DAY - 3 + ((w1.getDay() + 6) % 7)) / 7);
-}
-
-/** Hodiny a minuty pro velká čísla: „1:29“. */
-export function fmtHM(sec: number): string {
-  const m = Math.floor(Math.max(0, sec) / 60);
-  return `${Math.floor(m / 60)}:${pad(m % 60)}`;
 }
 
 /** Odpočet "24:13" nebo "1:02:05" */

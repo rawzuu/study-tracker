@@ -139,14 +139,14 @@ export function ReportPage() {
             </div>
             <div className="cell">
               <span className="label">Ø na aktivní den</span>
-              <span className="value">{fmtDuration(cur.avgPerActiveDay, { short: true })}</span>
+              <span className="value">{fmtDuration(cur.avgPerActiveDay)}</span>
               <span className="foot">
                 <Delta cur={cur.avgPerActiveDay} prev={prev.avgPerActiveDay} />
               </span>
             </div>
             <div className="cell">
               <span className="label">Ø blok</span>
-              <span className="value">{fmtDuration(cur.avgSession, { short: true })}</span>
+              <span className="value">{fmtDuration(cur.avgSession)}</span>
               <span className="foot">{cur.sessions} sezení</span>
             </div>
             <div className="cell">
@@ -220,7 +220,7 @@ export function ReportPage() {
                   {cur.dayparts.map((p) => (
                     <tr key={p.label}>
                       <td>{p.label}</td>
-                      <td className="r">{fmtDuration(p.min * 60, { short: true })}</td>
+                      <td className="r">{fmtDuration(p.min * 60)}</td>
                       <td className="r">{Math.round((p.min / Math.max(1, cur.total / 60)) * 100)} %</td>
                       <td className="r">{p.focus ? fmtDec(p.focus) : '—'}</td>
                     </tr>
@@ -254,12 +254,12 @@ export function ReportPage() {
                               <span className="ellipsis">{subjById.get(r.id)?.name ?? 'Smazaný předmět'}</span>
                             </span>
                           </td>
-                          <td className="r">{fmtDuration(r.cur, { short: true })}</td>
+                          <td className="r">{fmtDuration(r.cur)}</td>
                           <td className="r">
                             {r.prev ? (
                               <span className={r.cur >= r.prev ? 'delta-up' : 'delta-down'}>
                                 {r.cur >= r.prev ? '+' : '−'}
-                                {fmtDuration(Math.abs(r.cur - r.prev), { short: true })}
+                                {fmtDuration(Math.abs(r.cur - r.prev))}
                               </span>
                             ) : (
                               <span className="faint">nové</span>
@@ -288,7 +288,7 @@ export function ReportPage() {
             <div className="cell">
               <span className="label">Plnění plánu</span>
               <span className="value">{cur.planAdherence == null ? '—' : `${Math.round(cur.planAdherence * 100)} %`}</span>
-              <span className="foot">{cur.plannedSec ? `naplánováno ${fmtDuration(cur.plannedSec, { short: true })}` : 'bez plánu'}</span>
+              <span className="foot">{cur.plannedSec ? `naplánováno ${fmtDuration(cur.plannedSec)}` : 'bez plánu'}</span>
             </div>
             <div className="cell">
               <span className="label">Témata</span>
@@ -297,7 +297,7 @@ export function ReportPage() {
             </div>
             <div className="cell">
               <span className="label">Nejsilnější den</span>
-              <span className="value">{cur.bestDay ? fmtDuration(cur.bestDay.sec, { short: true }) : '—'}</span>
+              <span className="value">{cur.bestDay ? fmtDuration(cur.bestDay.sec) : '—'}</span>
               <span className="foot">
                 {cur.bestDay ? new Date(cur.bestDay.key).toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }) : ''}
               </span>

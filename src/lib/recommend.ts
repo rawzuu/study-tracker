@@ -1,7 +1,7 @@
 import { AppData, Session, Subject, Topic, alive } from '../data/schema';
 import { ctxFrom, isDue, retrievability } from '../features/topics/schedule';
 import { avgFocus } from './stats';
-import { blockTopic } from './blockTopic';
+import { blockTopic, blockTopics } from './blockTopic';
 import { lectureSubject, lecturesIn } from './timetable';
 import { DAY, HOUR, MIN, addDays, minutesOfDay, parseDayKey, startOfDay, startOfWeek, weekdayIdx } from './time';
 
@@ -41,6 +41,7 @@ export interface Recommendation {
   title: string; // „Opakování: Derivace, Limity“
   topic: string; // co předvyplnit do časovače
   topics: Topic[];
+  extraTopics: string[]; // další témata, jejichž opakování se zapíše se stejným blokem (hlavní je `topic`)
   minutes: number;
   modeId: string;
   score: number;
@@ -261,6 +262,7 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
       signals: { E, R, G, N, P, X },
       reasons: reasons.sort((a, b) => b[0] - a[0]).map((r) => r[1]),
       planBlockId: activity === 'plan' ? planBlock?.id : undefined,
+      extraTopics: activity === 'review' ? chosen.slice(1).map((t) => t.name) : activity === 'plan' && planBlock ? blockTopics(planBlock.title).slice(1) : [],
     });
   }
 
@@ -278,6 +280,7 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
         title: `Po přednášce: ${l.title}`,
         topic: '',
         topics: [],
+        extraTopics: [],
         minutes: 15,
         modeId: 'stopwatch',
         score: 0.15 + 0.35 * clamp(1 - hoursAgo / 8),
@@ -302,6 +305,7 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
         title: `Anki: ${due} karet`,
         topic: '',
         topics: [],
+        extraTopics: [],
         minutes,
         modeId: 'stopwatch',
         score,

@@ -74,16 +74,16 @@ export function DayPlanModal({ onClose }: { onClose: () => void }) {
       <div className="stack" style={{ gap: 16 }}>
         <div className="dp-sum num small">
           <span>
-            cíl <b>{fmtDuration(data.settings.dailyGoalMin * 60, { short: true })}</b>
+            cíl <b>{fmtDuration(data.settings.dailyGoalMin * 60)}</b>
           </span>
           <span>
-            odučeno <b>{fmtDuration(studied * 60, { short: true })}</b>
+            odučeno <b>{fmtDuration(studied * 60)}</b>
           </span>
           <span>
-            už v plánu <b>{fmtDuration(planned * 60, { short: true })}</b>
+            už v plánu <b>{fmtDuration(planned * 60)}</b>
           </span>
           <span className="accent-text">
-            navrhuji <b>{fmtDuration(proposed * 60, { short: true })}</b>
+            navrhuji <b>{fmtDuration(proposed * 60)}</b>
           </span>
         </div>
 

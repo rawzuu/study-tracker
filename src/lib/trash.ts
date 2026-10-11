@@ -54,7 +54,20 @@ function undelete<T extends Entity>(e: T, now: number): T {
   return { ...rest, updatedAt: now };
 }
 
-/** Vrátí smazanou položku. U zkoušky vrátí i její naplánovaná opakování smazaná spolu s ní. */
+/** Smaže předmět i s jeho bloky v plánu, zkouškami a tématy – vše ve stejném okamžiku, aby šlo vrátit naráz. */
+export function removeSubjectWithPlans(d: AppData, id: string, now = Date.now()): AppData {
+  const del = <T extends Entity & { subjectId?: string }>(list: T[], match: (e: T) => boolean) =>
+    list.map((e) => (!e.deletedAt && match(e) ? { ...e, deletedAt: now, updatedAt: now } : e));
+  return {
+    ...d,
+    subjects: del(d.subjects, (s) => s.id === id),
+    planBlocks: del(d.planBlocks, (b) => b.subjectId === id),
+    exams: del(d.exams, (e) => e.subjectId === id),
+    topics: del(d.topics, (t) => t.subjectId === id),
+  };
+}
+
+/** Vrátí smazanou položku. U zkoušky vrátí i její naplánovaná opakování, u předmětu jeho plány a témata smazané spolu s ním. */
 export function restoreEntity(d: AppData, key: CollectionKey, id: string, now = Date.now()): AppData {
   const list = d[key] as Entity[];
   const target = list.find((e) => e.id === id);
@@ -64,6 +77,13 @@ export function restoreEntity(d: AppData, key: CollectionKey, id: string, now = 
     // bloky se mažou ve stejné chvíli jako zkouška (tolerance pro starší data, kde se mazalo ve dvou krocích)
     const at = target.deletedAt;
     out.planBlocks = d.planBlocks.map((b) => (b.examId === id && b.deletedAt && Math.abs(b.deletedAt - at) < 5000 ? undelete(b, now) : b));
+  }
+  if (key === 'subjects') {
+    const at = target.deletedAt;
+    const same = (e: Entity & { subjectId: string }) => e.subjectId === id && !!e.deletedAt && Math.abs(e.deletedAt - at) < 5000;
+    out.planBlocks = out.planBlocks.map((b) => (same(b) ? undelete(b, now) : b));
+    out.exams = d.exams.map((e) => (same(e) ? undelete(e, now) : e));
+    out.topics = d.topics.map((t) => (same(t) ? undelete(t, now) : t));
   }
   return out;
 }

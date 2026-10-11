@@ -43,6 +43,9 @@ export function FeaturesSection() {
         <Row label="Hotový blok zapsat jako odučený" desc="Tlačítko Hotovo u bloku v kalendáři nabídne zapsat jeho čas, aby se započítal do přehledu. Vypnuté jen odškrtne plán.">
           <Switch checked={s.blockDoneLogs !== false} onChange={(v) => setSettings({ blockDoneLogs: v })} label="Hotový blok zapsat jako odučený" />
         </Row>
+        <Row label="Blok s více tématy zapíše všechna" desc="Po bloku typu „Opakování: Derivace, Limity“ se zapíše opakování všech témat, ne jen prvního. V okně po bloku jde kterékoli odškrtnout.">
+          <Switch checked={s.multiTopicReview !== false} onChange={(v) => setSettings({ multiTopicReview: v })} label="Blok s více tématy zapíše všechna" />
+        </Row>
         <Row label="Dny volna v sérii" desc="Kolik dní bez učení za týden sérii nepřeruší.">
           <Segmented<string>
             value={String(s.streakRestDays ?? 0)}

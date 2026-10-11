@@ -66,6 +66,30 @@ export function Segmented<T extends string>({
   );
 }
 
+/** Délka pro velká čísla – stejný tvar jako fmtDuration („1 h 19 min“), jednotky menším písmem. */
+export function Dur({ sec }: { sec: number }) {
+  const total = Math.floor(Math.max(0, sec) / 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return (
+    <span className="dur" aria-label={h ? `${h} h${m ? ` ${m} min` : ''}` : `${m} min`}>
+      {h > 0 && (
+        <>
+          {h}
+          <span className="dur-u"> h</span>
+        </>
+      )}
+      {(m > 0 || h === 0) && (
+        <>
+          {h > 0 && ' '}
+          {m}
+          <span className="dur-u"> min</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 export function Field({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
   return (
     <label className="field">

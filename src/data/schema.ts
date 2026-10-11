@@ -209,6 +209,8 @@ export interface Settings {
   tokenWarning: boolean; // upozornit, když synchronizace s GitHubem selhává nebo končí platnost tokenu
   // v2.6.1+
   blockDoneLogs: boolean; // „Hotovo“ u bloku plánu nabídne zapsat jeho čas jako odučený
+  // v2.6.2+
+  multiTopicReview: boolean; // blok „Opakování: A, B, C“ zapíše opakování všech témat, ne jen prvního
 }
 
 export interface AppData {
@@ -276,6 +278,7 @@ export function defaultSettings(): Settings {
     streakMinMin: 0,
     tokenWarning: true,
     blockDoneLogs: true,
+    multiTopicReview: true,
   };
 }
 

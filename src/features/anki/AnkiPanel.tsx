@@ -72,7 +72,7 @@ export function AnkiPanel({ className = '' }: { className?: string }) {
           </div>
           {fresh && (
             <div className="small faint num">
-              dnes hotovo {snap.reviewedToday} karet · {fmtDuration(snap.msToday / 1000, { short: true })}
+              dnes hotovo {snap.reviewedToday} karet · {fmtDuration(snap.msToday / 1000)}
             </div>
           )}
         </div>

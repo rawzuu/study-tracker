@@ -3,12 +3,12 @@ import { AlertTriangle, ArrowRight, BookOpen, CalendarDays, Check, FileText, Gra
 import { useStore } from '../../data/store';
 import { loadGithubConfig, tokenDaysLeft } from '../../data/github';
 import { alive } from '../../data/schema';
-import { Empty } from '../../components/ui';
+import { Dur, Empty } from '../../components/ui';
 import { Chart, chartColors, useTheme } from '../../components/Chart';
-import { DAY, addDays, dayKey, fmtClock, fmtDuration, fmtHM, fmtTime, isoWeek, parseDayKey, plural, startOfDay, startOfWeek, WEEKDAYS_SHORT, fmtDec } from '../../lib/time';
+import { DAY, addDays, dayKey, fmtClock, fmtDuration, fmtTime, isoWeek, parseDayKey, plural, startOfDay, startOfWeek, WEEKDAYS_SHORT, fmtDec } from '../../lib/time';
 import { avgFocus, byDay, bySubject, inRange, streaks, totalSec } from '../../lib/stats';
 import { navigate } from '../../lib/router';
-import { blockTopic } from '../../lib/blockTopic';
+import { blockTopics } from '../../lib/blockTopic';
 import { calendarHeatmap } from '../stats/charts';
 import { SubjectTag } from '../subjects/SubjectSelect';
 import { useTimer } from '../timer/TimerContext';
@@ -44,7 +44,7 @@ function gaugeArc(c: number, r: number, from: number, to: number) {
  * Měřidlo dneška: tři tenké oblouky (270°, otevřené dole) se stupnicí po čtvrtinách
  * a popisky přímo u začátků oblouků.
  */
-function DayGauge({ rings, center, sub }: { rings: { label: string; value: number; color: string }[]; center: string; sub: string }) {
+function DayGauge({ rings, sec, sub }: { rings: { label: string; value: number; color: string }[]; sec: number; sub: string }) {
   const C = 115;
   const radii = [100, 84, 68];
   const ticks = [0, 0.25, 0.5, 0.75, 1]
@@ -73,7 +73,10 @@ function DayGauge({ rings, center, sub }: { rings: { label: string; value: numbe
         })}
       </svg>
       <div className="gauge-center">
-        <span className="serif gauge-value">{center}</span>
+        {/* „1 h 19 min“ je širší než „39 min“ – písmo se zmenší, aby se vešlo do vnitřního kruhu */}
+        <span className={`serif gauge-value ${sec >= 36_000 ? 'xs' : sec >= 3600 ? 'sm' : ''}`}>
+          <Dur sec={sec} />
+        </span>
         <span className="gauge-sub">{sub}</span>
       </div>
     </div>
@@ -227,8 +230,8 @@ export function Dashboard() {
   const showSync = data.settings.tokenWarning !== false && !syncDismissed && (syncBroken || (sync.status !== 'off' && tokenDays != null && tokenDays <= 7));
   const showAnki = data.settings.anki.enabled || data.anki.some((a) => a.id === 'snapshot' && !a.deletedAt);
 
-  const startTopic = (subjectId: string, topic: string, planBlockId?: string) => {
-    timer.configure({ subjectId, topic, planBlockId });
+  const startTopic = (subjectId: string, topic: string, planBlockId?: string, extraTopics: string[] = []) => {
+    timer.configure({ subjectId, topic, planBlockId, extraTopics });
     navigate('casovac');
   };
 
@@ -329,21 +332,25 @@ export function Dashboard() {
                 { label: 'Týden', value: weekGoal > 0 ? weekSec / weekGoal : 0, color: 'var(--break)' },
                 { label: 'Soustředění', value: focus7 ? focus7 / 5 : 0, color: 'var(--focus)' },
               ]}
-              center={fmtHM(todaySec)}
-              sub={goal > 0 ? `ze ${fmtHM(goal)}` : 'dnes'}
+              sec={todaySec}
+              sub={goal > 0 ? `ze ${fmtDuration(goal)}` : 'dnes'}
             />
             <div className="dash-legend">
               <div className="legend-row">
                 <i style={{ background: 'var(--accent)' }} />
                 <span className="grow muted">Dnes</span>
-                <span className="serif legend-val">{fmtHM(todaySec)}</span>
-                <span className="legend-of">{goal > 0 ? (todaySec >= goal ? 'cíl splněn' : `ze ${fmtHM(goal)}`) : 'bez cíle'}</span>
+                <span className="serif legend-val">
+                  <Dur sec={todaySec} />
+                </span>
+                <span className="legend-of">{goal > 0 ? (todaySec >= goal ? 'cíl splněn' : `ze ${fmtDuration(goal)}`) : 'bez cíle'}</span>
               </div>
               <div className="legend-row">
                 <i style={{ background: 'var(--break)' }} />
                 <span className="grow muted">Týden</span>
-                <span className="serif legend-val">{fmtHM(weekSec)}</span>
-                <span className="legend-of">{weekGoal > 0 ? `z ${fmtHM(weekGoal)}` : 'bez cíle'}</span>
+                <span className="serif legend-val">
+                  <Dur sec={weekSec} />
+                </span>
+                <span className="legend-of">{weekGoal > 0 ? `z ${fmtDuration(weekGoal)}` : 'bez cíle'}</span>
               </div>
               <div className="legend-row">
                 <i style={{ background: 'var(--focus)' }} />
@@ -401,7 +408,10 @@ export function Dashboard() {
                     <Check size={14} color="var(--success)" aria-label="Hotovo" />
                   ) : (
                     timer.state.status === 'idle' && (
-                      <button className="btn icon sm" title="Spustit časovač" aria-label="Spustit časovač" onClick={() => startTopic(b.subjectId, blockTopic(b.title), b.id)}>
+                      <button className="btn icon sm" title="Spustit časovač" aria-label="Spustit časovač" onClick={() => {
+                          const [topic = '', ...extra] = blockTopics(b.title);
+                          startTopic(b.subjectId, topic, b.id, extra);
+                        }}>
                         <Play size={11} fill="currentColor" />
                       </button>
                     )
@@ -455,8 +465,8 @@ export function Dashboard() {
           <div className="card-head">
             <h2>Tento týden</h2>
             <span className="sub num">
-              {fmtHM(weekSec)}
-              {weekGoal > 0 && ` z ${fmtHM(weekGoal)}`}
+              {fmtDuration(weekSec)}
+              {weekGoal > 0 && ` z ${fmtDuration(weekGoal)}`}
             </span>
           </div>
           <div className="week-days" aria-label="Učení po dnech tohoto týdne">
@@ -485,7 +495,7 @@ export function Dashboard() {
                     </span>
                   )}
                   <span className="small num week-val">
-                    {fmtHM(r.sec)} <span className="faint">{r.goal > 0 ? `z ${fmtHM(r.goal)}` : 'bez cíle'}</span>
+                    {fmtDuration(r.sec)} <span className="faint">{r.goal > 0 ? `z ${fmtDuration(r.goal)}` : 'bez cíle'}</span>
                   </span>
                 </div>
               ))}
@@ -579,7 +589,7 @@ export function Dashboard() {
                     <td className="muted">{s.topic || <span className="faint">—</span>}</td>
                     <td className="faint">{modeName(s.mode, data.presets)}</td>
                     <td className="r">{s.focus ? `${s.focus}/5` : '—'}</td>
-                    <td className="r">{fmtDuration(s.durationSec, { short: true })}</td>
+                    <td className="r">{fmtDuration(s.durationSec)}</td>
                   </tr>
                 ))}
               </tbody>

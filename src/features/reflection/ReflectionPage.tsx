@@ -97,7 +97,7 @@ export function ReflectionPage() {
       <div className="strip" style={{ ['--n' as string]: 5 }}>
         <div className="cell">
           <span className="label">Celkem</span>
-          <span className="value">{fmtDuration(cur.total, { short: true })}</span>
+          <span className="value">{fmtDuration(cur.total)}</span>
           <span className="foot">
             {change == null ? 'bez srovnání' : <span className={change >= 0 ? 'delta-up' : 'delta-down'}>{change >= 0 ? '▲' : '▼'} {Math.abs(change)} % vs. předchozí</span>}
           </span>
@@ -194,8 +194,8 @@ export function ReflectionPage() {
                     <div className="row between small">
                       <SubjectTag id={id} />
                       <span className="num muted">
-                        {fmtDuration(done, { short: true })}
-                        {goal > 0 && ` / ${fmtDuration(goal, { short: true })}`}
+                        {fmtDuration(done)}
+                        {goal > 0 && ` / ${fmtDuration(goal)}`}
                       </span>
                     </div>
                     <Bar value={goal ? done / goal : 1} color={s?.color} />

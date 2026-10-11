@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseIcs } from '../lib/ical';
 import { diffTimetable, lecturesIn, replaceEvents } from '../lib/timetable';
 import { busyIntervals, findSlot } from '../lib/dayplan';
-import { restoreEntity, trashItems } from '../lib/trash';
+import { removeSubjectWithPlans, restoreEntity, trashItems } from '../lib/trash';
 import { calibrate, pendingSuggestions } from '../lib/calibrate';
 import { mergeData } from '../data/merge';
 import { Session, Timetable } from '../data/schema';
@@ -159,6 +159,30 @@ describe('koš', () => {
     // druhé zařízení má ještě starý tombstone → po sloučení zůstane obnoveno
     expect(mergeData(d, r).exams[0].deletedAt).toBeUndefined();
     expect('deletedAt' in JSON.parse(JSON.stringify(r.exams[0]))).toBe(false);
+  });
+
+  it('smazání předmětu i s plánem jde vrátit naráz, dřív smazané věci zůstanou smazané', () => {
+    const old = NOW - 3 * D;
+    const d = data({
+      subjects: [subject({ id: 's' }), subject({ id: 'x' })],
+      planBlocks: [block({ id: 'b1' }), block({ id: 'b2', subjectId: 'x' }), block({ id: 'b0', deletedAt: old, updatedAt: old })],
+      exams: [exam({ id: 'e1' })],
+      topics: [topic({ id: 't1' }), topic({ id: 't2', subjectId: 'x' })],
+    });
+    const del = removeSubjectWithPlans(d, 's', NOW);
+    expect(del.subjects.find((x) => x.id === 's')!.deletedAt).toBe(NOW);
+    expect(del.planBlocks.find((b) => b.id === 'b1')!.deletedAt).toBe(NOW);
+    expect(del.exams[0].deletedAt).toBe(NOW);
+    expect(del.topics.find((t) => t.id === 't1')!.deletedAt).toBe(NOW);
+    expect(del.planBlocks.find((b) => b.id === 'b2')!.deletedAt).toBeUndefined(); // jiný předmět
+    expect(del.topics.find((t) => t.id === 't2')!.deletedAt).toBeUndefined();
+    expect(del.planBlocks.find((b) => b.id === 'b0')!.deletedAt).toBe(old); // dřívější smazání se nepřepíše
+    const back = restoreEntity(del, 'subjects', 's', NOW + 60_000);
+    expect(back.subjects.find((x) => x.id === 's')!.deletedAt).toBeUndefined();
+    expect(back.planBlocks.find((b) => b.id === 'b1')!.deletedAt).toBeUndefined();
+    expect(back.exams[0].deletedAt).toBeUndefined();
+    expect(back.topics.find((t) => t.id === 't1')!.deletedAt).toBeUndefined();
+    expect(back.planBlocks.find((b) => b.id === 'b0')!.deletedAt).toBe(old);
   });
 });
 

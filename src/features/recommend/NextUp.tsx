@@ -36,7 +36,7 @@ export function useRecommendations(): Recommendation[] {
 
 export function startRecommendation(r: Recommendation, timer: ReturnType<typeof useTimer>) {
   if (!r.subjectId) return;
-  timer.configure({ subjectId: r.subjectId, topic: r.topic, modeId: r.modeId, planBlockId: r.planBlockId });
+  timer.configure({ subjectId: r.subjectId, topic: r.topic, extraTopics: r.extraTopics, modeId: r.modeId, planBlockId: r.planBlockId });
   navigate('casovac');
 }
 
@@ -108,7 +108,7 @@ export function NextUp({ className = '' }: { className?: string }) {
                   <span className="grow ellipsis">
                     <b>{subjName(r.subjectId)}</b> <span className="faint">{r.title}</span>
                   </span>
-                  <span className="num faint small">{r.minutes}m</span>
+                  <span className="num faint small">{r.minutes} min</span>
                 </button>
               ))}
             </div>
@@ -174,7 +174,7 @@ export function NextUpInline() {
         <span className="label">Doporučuji</span>{' '}
         <b className="subj-ink" style={{ ['--c' as string]: s?.color ?? 'var(--text)' }}>{s?.name}</b> · {top.title} · <span className="num">{top.minutes} min</span>
       </span>
-      <button className="btn sm" onClick={() => timer.configure({ subjectId: top.subjectId!, topic: top.topic, modeId: top.modeId, planBlockId: top.planBlockId })}>
+      <button className="btn sm" onClick={() => timer.configure({ subjectId: top.subjectId!, topic: top.topic, extraTopics: top.extraTopics, modeId: top.modeId, planBlockId: top.planBlockId })}>
         Použít
       </button>
     </div>

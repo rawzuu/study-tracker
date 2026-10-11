@@ -1,10 +1,10 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../data/store';
-import { uid } from '../../data/schema';
+import { Topic, uid } from '../../data/schema';
 import { chime, notify, unlockAudio } from '../../lib/alerts';
 import { fmtClock } from '../../lib/time';
 import { BUILTIN_MODES, TimerMode, allModes } from './modes';
-import { applyStudy, ctxFrom, findTopic, newTopic, topicSnapshots } from '../topics/schedule';
+import { applyStudy, ctxFrom, extraTopicSnapshots, findTopic, newTopic, topicSnapshots } from '../topics/schedule';
 import { matchPlanBlocks } from '../planner/match';
 
 /**
@@ -22,6 +22,7 @@ export interface TimerState {
   subjectId: string;
   topic: string;
   planBlockId?: string;
+  extraTopics?: string[]; // další témata bloku „Opakování: A, B, C“ (hlavní je `topic`)
   segmentStart: number | null;
   accumulated: number;
   phaseDurationMs: number | null;
@@ -66,7 +67,7 @@ interface TimerValue {
   elapsedMs: number;
   remainingMs: number | null;
   progress: number; // 0–1 (u počítání nahoru 0)
-  configure: (patch: Partial<Pick<TimerState, 'modeId' | 'subjectId' | 'topic' | 'planBlockId'>>) => void;
+  configure: (patch: Partial<Pick<TimerState, 'modeId' | 'subjectId' | 'topic' | 'planBlockId' | 'extraTopics'>>) => void;
   start: () => void;
   pause: () => void;
   resume: () => void;
@@ -140,6 +141,20 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         upsert('topics', next);
         topicId = next.id;
       }
+      // Blok s více tématy: zapíše opakování i ostatních (jen existujících) témat; v okně po bloku jde kterékoli vrátit.
+      const extras: Topic[] = [];
+      if (topicId && st.multiTopicReview !== false) {
+        for (const name of s.extraTopics ?? []) {
+          const t = findTopic(d.topics, s.subjectId, name);
+          if (!t || t.id === topicId || t.mastered || extras.some((x) => x.id === t.id)) continue;
+          extras.push(t);
+          upsert('topics', applyStudy(t, endAt, 'ok', ctxFrom(d), { auto: true }));
+        }
+        if (extras.length) {
+          extraTopicSnapshots.set(id, extras);
+          setState((p) => ({ ...p, extraTopics: undefined })); // další blok stejného sezení už je nezapočítá znovu
+        }
+      }
       upsert('sessions', {
         id,
         subjectId: s.subjectId,
@@ -174,7 +189,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         notify('Blok práce hotový', 'Dej si pauzu – zasloužíš si ji.');
       }
       if (m.kind === 'stopwatch') {
-        setState((p) => ({ ...p, status: 'idle', phase: 'work', segmentStart: null, accumulated: 0, phaseDurationMs: null, interruptions: 0, workStartedAt: null, planBlockId: undefined }));
+        setState((p) => ({ ...p, status: 'idle', phase: 'work', segmentStart: null, accumulated: 0, phaseDurationMs: null, interruptions: 0, workStartedAt: null, planBlockId: undefined, extraTopics: undefined }));
         return;
       }
       let phase: Phase = 'short';
@@ -268,6 +283,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     setState((p) => {
       const next = { ...p, ...patch };
       if (patch.modeId && patch.modeId !== p.modeId && p.status === 'idle') next.round = 0;
+      // Další témata patří jen k nastavení, se kterým přišla – ruční změna předmětu nebo tématu je zahodí.
+      if (!('extraTopics' in patch) && (patch.subjectId !== undefined || patch.topic !== undefined)) next.extraTopics = undefined;
       return next;
     });
   }, []);
@@ -331,6 +348,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     interruptions: 0,
     workStartedAt: null,
     planBlockId: undefined,
+    extraTopics: undefined,
   });
 
   const stop = useCallback(() => {

@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BellOff, Check, Coffee, Maximize2, Minimize2, Pause, Play, SkipForward, Square } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { NoiseType, alive } from '../../data/schema';
-import { fmtClock, fmtDuration, fmtHM, startOfDay } from '../../lib/time';
+import { fmtClock, fmtDuration, startOfDay } from '../../lib/time';
 import { inRange, totalSec } from '../../lib/stats';
 import { NOISE_LABEL, startNoise, stopNoise } from '../../lib/noise';
 import { unlockAudio } from '../../lib/alerts';
-import { Segmented, useToast } from '../../components/ui';
+import { Dur, Segmented, useToast } from '../../components/ui';
 import { SubjectSelect } from '../subjects/SubjectSelect';
 import { BREAK_TIPS, allModes } from './modes';
 import { useTimer } from './TimerContext';
@@ -247,8 +247,8 @@ export function TimerPage() {
           <div className="row" style={{ alignItems: 'baseline' }}>
             <span className="label">Dnes</span>
             <span className="serif" style={{ fontSize: 24 }}>
-              {fmtHM(todaySec)}
-              {goal > 0 && <span className="faint" style={{ fontSize: 16 }}> ze {fmtHM(goal)}</span>}
+              <Dur sec={todaySec} />
+              {goal > 0 && <span className="faint" style={{ fontSize: 16 }}> ze {fmtDuration(goal)}</span>}
             </span>
           </div>
         </div>

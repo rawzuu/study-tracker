@@ -189,3 +189,5 @@ export function overdueDays(t: Topic, now = Date.now()): number {
 
 /** Stav tématu před posledním uloženým sezením – kvůli zpětné úpravě podle hodnocení vybavení. */
 export const topicSnapshots = new Map<string, Topic>();
+/** Další témata zapsaná se sezením (blok „Opakování: A, B, C“) – stav před zápisem, kvůli odškrtnutí nebo změně hodnocení. */
+export const extraTopicSnapshots = new Map<string, Topic[]>();

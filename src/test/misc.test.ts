@@ -4,9 +4,9 @@ import { buildIcs } from '../features/planner/ics';
 import { blockHasSession, matchPlanBlocks } from '../features/planner/match';
 import { escapeHtml } from '../features/stats/charts';
 import { clusterReviews } from '../lib/anki';
-import { blockTopic } from '../lib/blockTopic';
+import { blockTopic, blockTopics } from '../lib/blockTopic';
 import { sessionsToCsv } from '../lib/csv';
-import { capitalize, fmtHM, isoWeek } from '../lib/time';
+import { capitalize, fmtDec, fmtDuration, isoWeek } from '../lib/time';
 import { D, H, M, NOW, block, data, session, subject } from './helpers';
 
 describe('úspěchy', () => {
@@ -64,11 +64,18 @@ describe('Anki a kalendář', () => {
 });
 
 describe('formát čísel na přehledu', () => {
-  it('hodiny a minuty', () => {
-    expect(fmtHM(0)).toBe('0:00');
-    expect(fmtHM(89 * 60 + 59)).toBe('1:29');
-    expect(fmtHM(16 * 3600 + 30 * 60)).toBe('16:30');
-    expect(fmtHM(-5)).toBe('0:00');
+  it('délka všude stejně: „25 min“, „1 h 19 min“', () => {
+    expect(fmtDuration(0)).toBe('0 min');
+    expect(fmtDuration(25 * 60)).toBe('25 min');
+    expect(fmtDuration(79 * 60 + 59)).toBe('1 h 19 min');
+    expect(fmtDuration(3 * 3600)).toBe('3 h');
+    expect(fmtDuration(16 * 3600 + 5 * 60)).toBe('16 h 5 min');
+    expect(fmtDuration(-5)).toBe('0 min');
+  });
+  it('desetinná čárka', () => {
+    expect(fmtDec(3.62)).toBe('3,6');
+    expect(fmtDec(4)).toBe('4,0');
+    expect(fmtDec(0.125, 2)).toBe('0,13');
   });
   it('číslo týdne podle ISO', () => {
     expect(isoWeek(new Date(2026, 9, 10, 23, 30).getTime())).toBe(41);
@@ -92,6 +99,13 @@ describe('blok plánu → téma a zápis', () => {
     expect(blockTopic('Příprava na zkoušku: Zápočtový test')).toBe('Zápočtový test');
     expect(blockTopic('Opakování: Zápočtový test (−3 d)')).toBe('Zápočtový test');
     expect(blockTopic('Podle plánu: Nové téma: Řady')).toBe('Řady');
+  });
+  it('blok s více tématy vrátí všechna uvedená', () => {
+    expect(blockTopics('Opakování: Derivace, Limity, Řady +4')).toEqual(['Derivace', 'Limity', 'Řady']);
+    expect(blockTopics('Podle plánu: Opakování: A, B')).toEqual(['A', 'B']);
+    expect(blockTopics('Nové téma: Řady')).toEqual(['Řady']);
+    expect(blockTopics('Po přednášce: Fyzika I')).toEqual([]);
+    expect(blockTopics('Integrály, per partes')).toEqual(['Integrály, per partes']); // vlastní název se nedělí
   });
   it('názvy bez tématu vrátí prázdné, vlastní název nechá', () => {
     expect(blockTopic('Po přednášce: Fyzika I')).toBe('');

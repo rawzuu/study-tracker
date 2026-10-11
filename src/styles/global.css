@@ -1464,3 +1464,27 @@ input[type='color'].input {
 :root[data-theme='light'] .subj-ink {
   color: color-mix(in srgb, var(--c) 50%, var(--text));
 }
+
+/* Délka u velkých čísel: jednotky menším systémovým písmem („1 h 19 min“). */
+.dur {
+  white-space: nowrap;
+}
+.dur-u {
+  font-family: var(--font);
+  font-size: 0.6em;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+
+/* Další témata z bloku v okně po bloku */
+.extra-topic {
+  gap: 9px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.extra-topic input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}

@@ -141,7 +141,7 @@ export function StatsPage() {
             </div>
             <div className="cell">
               <span className="label">Ø na den</span>
-              <span className="value">{fmtDuration(total / days, { short: true })}</span>
+              <span className="value">{fmtDuration(total / days)}</span>
               <span className="foot">za celé období</span>
             </div>
             <div className="cell">
@@ -154,7 +154,7 @@ export function StatsPage() {
             </div>
             <div className="cell">
               <span className="label">Ø blok</span>
-              <span className="value">{fmtDuration(avgLen, { short: true })}</span>
+              <span className="value">{fmtDuration(avgLen)}</span>
               <span className="foot">{blocks.length} bloků{filtered.length > blocks.length ? ` + ${filtered.length - blocks.length}× Anki` : ''}</span>
             </div>
             <div className="cell">
@@ -167,7 +167,7 @@ export function StatsPage() {
             </div>
             <div className="cell">
               <span className="label">Nejsilnější okno</span>
-              <span className="value">{peak ? `${peak.from}–${peak.to}h` : '—'}</span>
+              <span className="value">{peak ? `${peak.from}–${peak.to} h` : '—'}</span>
               <span className="foot">kdy se učíš nejvíc</span>
             </div>
           </div>
@@ -195,7 +195,7 @@ export function StatsPage() {
                       <span className="ellipsis">{subjById.get(id)?.name ?? 'Smazaný předmět'}</span>
                     </span>
                     <span className="num muted">
-                      {fmtDuration(sec, { short: true })} <span className="faint">· {Math.round((sec / Math.max(1, total)) * 100)}%</span>
+                      {fmtDuration(sec)} <span className="faint">· {Math.round((sec / Math.max(1, total)) * 100)}%</span>
                     </span>
                   </div>
                 ))}

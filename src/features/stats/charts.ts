@@ -12,9 +12,9 @@ const fmtMin = (min: number) => fmtDuration(min * 60);
 /** Tooltipy ECharts se vykreslují jako HTML – texty od uživatele (názvy předmětů) musí být escapované. */
 export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
-/** Popisek osy v minutách: "45m", "1,5h" */
+/** Popisek osy v minutách: "45 min", "1,5 h" */
 const fmtAxisMin = (v: number) =>
-  v === 0 ? '0' : v < 60 ? `${v}m` : `${(v / 60).toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}h`;
+  v === 0 ? '0' : v < 60 ? `${v} min` : `${(v / 60).toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} h`;
 
 /** Hezké dělení osy (15 min, 30 min, 1 h, 2 h…). */
 function niceAxis(maxMin: number): { interval: number; max: number } {
@@ -195,7 +195,7 @@ export function donut(c: ChartColors, items: { name: string; color: string; min:
   const total = items.reduce((a, i) => a + i.min, 0);
   return {
     title: {
-      text: fmtDuration(total * 60, { short: true }),
+      text: fmtDuration(total * 60),
       subtext: 'celkem',
       left: 'center',
       top: '38%',

@@ -3,7 +3,7 @@ import { useStore } from '../../data/store';
 import { Modal } from '../../components/ui';
 import { fmtDuration } from '../../lib/time';
 import { SubjectTag } from '../subjects/SubjectSelect';
-import { RATINGS, RATING_HINT, RATING_LABEL, RecallRating, applyStudy, ctxFrom, topicSnapshots } from '../topics/schedule';
+import { RATINGS, RATING_HINT, RATING_LABEL, RecallRating, applyStudy, ctxFrom, extraTopicSnapshots, topicSnapshots } from '../topics/schedule';
 import { useTimer } from './TimerContext';
 
 export const FOCUS_LABELS = ['', 'Rozptýlený', 'Spíš slabé', 'V pohodě', 'Soustředěný', 'Hluboký flow'];
@@ -20,6 +20,9 @@ export function AfterBlockModal() {
   const [recall, setRecall] = useState('');
   const [note, setNote] = useState('');
   const [difficulty, setDifficulty] = useState<RecallRating | null>(null);
+  // Další témata z bloku „Opakování: A, B, C“ – zapsala se jako zopakovaná, odškrtnutím se vrátí.
+  const [dropped, setDropped] = useState<Set<string>>(() => new Set());
+  const extras = (pendingRating && extraTopicSnapshots.get(pendingRating)) || [];
 
   if (!session) return null;
   const { askFocusRating, askRecall } = data.settings;
@@ -30,7 +33,11 @@ export function AfterBlockModal() {
     setRecall('');
     setNote('');
     setDifficulty(null);
-    if (pendingRating) topicSnapshots.delete(pendingRating);
+    setDropped(new Set());
+    if (pendingRating) {
+      topicSnapshots.delete(pendingRating);
+      extraTopicSnapshots.delete(pendingRating);
+    }
     clearRating();
   };
 
@@ -47,10 +54,15 @@ export function AfterBlockModal() {
     if (topic && snap && difficulty) {
       upsert('topics', { ...applyStudy(snap, session.end, difficulty, ctxFrom(data)), id: topic.id, createdAt: topic.createdAt });
     }
+    for (const x of extras) {
+      if (!data.topics.some((t) => t.id === x.id && !t.deletedAt)) continue;
+      if (dropped.has(x.id)) upsert('topics', { ...x }); // nestihlo se → stav před blokem, téma zůstane k opakování
+      else if (difficulty) upsert('topics', { ...applyStudy(x, session.end, difficulty, ctxFrom(data)), id: x.id, createdAt: x.createdAt });
+    }
     close();
   };
 
-  const dirty = focus != null || recall.trim() || note.trim() || difficulty;
+  const dirty = focus != null || recall.trim() || note.trim() || difficulty || dropped.size > 0;
 
   return (
     <Modal
@@ -102,7 +114,33 @@ export function AfterBlockModal() {
                 </button>
               ))}
             </div>
-            <span className="small faint">Algoritmus FSRS podle toho spočítá, kdy ti téma připomenout. Bez výběru se počítá s „Dobře“.</span>
+            <span className="small faint">
+              Algoritmus FSRS podle toho spočítá, kdy ti téma připomenout. Bez výběru se počítá s „Dobře“{extras.length > 0 ? ', stejné hodnocení dostanou i zaškrtnutá témata níž' : ''}.
+            </span>
+          </div>
+        )}
+
+        {extras.length > 0 && (
+          <div className="stack tight">
+            <span className="label">Další témata z bloku</span>
+            {extras.map((x) => (
+              <label key={x.id} className="row extra-topic">
+                <input
+                  type="checkbox"
+                  checked={!dropped.has(x.id)}
+                  onChange={(e) =>
+                    setDropped((cur) => {
+                      const next = new Set(cur);
+                      if (e.target.checked) next.delete(x.id);
+                      else next.add(x.id);
+                      return next;
+                    })
+                  }
+                />
+                <span>{x.name}</span>
+              </label>
+            ))}
+            <span className="small faint">Zapsala se jako zopakovaná. Odškrtni, co se v bloku nestihlo – zůstane k opakování.</span>
           </div>
         )}
 

@@ -65,7 +65,7 @@ export function MonthView({
             <button key={d} className={`month-cell ${inMonth ? '' : 'out'} ${d === today ? 'today' : ''}`} onClick={() => onOpenDay(d)}>
               <div className="month-top">
                 <span className="num month-dn">{new Date(d).getDate()}</span>
-                {total > 0 && <span className="num month-sec">{fmtDuration(total, { short: true })}</span>}
+                {total > 0 && <span className="num month-sec">{fmtDuration(total)}</span>}
               </div>
               {total > 0 && (
                 <span className="month-mix" style={{ width: `${Math.max(8, (total / maxDay) * 100)}%` }}>
@@ -82,7 +82,7 @@ export function MonthView({
               {subjRows.slice(0, 3).map(([id, sec]) => (
                 <span key={id} className="month-row ellipsis">
                   <i className="sq" style={{ background: subj.get(id)?.color }} />
-                  {subj.get(id)?.name} <span className="num faint">{fmtDuration(sec, { short: true })}</span>
+                  {subj.get(id)?.name} <span className="num faint">{fmtDuration(sec)}</span>
                 </span>
               ))}
               {blocks

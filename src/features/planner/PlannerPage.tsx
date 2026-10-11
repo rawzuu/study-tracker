@@ -270,7 +270,7 @@ export function PlannerPage() {
           <div className="row wrap">
             {view === 'week' && (
               <span className="sub num hide-sm">
-                odučeno {fmtDuration(weekStudied, { short: true })} · plán {fmtDuration(weekPlanned, { short: true })}
+                odučeno {fmtDuration(weekStudied)} · plán {fmtDuration(weekPlanned)}
               </span>
             )}
             <Segmented<Layer>
@@ -318,7 +318,7 @@ export function PlannerPage() {
                       <div key={d} className={`week-day-head ${d === today ? 'today' : ''}`}>
                         <span className="wd">{WEEKDAYS_SHORT[i]}</span>
                         <span className="dn">{new Date(d).getDate()}</span>
-                        <span className="day-sum num">{daySec ? fmtDuration(daySec, { short: true }) : ' '}</span>
+                        <span className="day-sum num">{daySec ? fmtDuration(daySec) : ' '}</span>
                         <span className="day-mix">
                           {[...perSubj.entries()].map(([id, sec]) => (
                             <i key={id} style={{ flexGrow: sec, background: subj.get(id)?.color }} />
@@ -414,7 +414,7 @@ export function PlannerPage() {
                                 title={`${it.kind === 'live' ? 'Právě probíhá' : 'Odučeno'}: ${s?.name ?? ''}${it.title ? ' – ' + it.title : ''} · ${timeLabel}${it.session ? ' · ' + fmtDuration(it.session.durationSec) : ''}`}
                               >
                                 <b>{s?.name ?? 'Smazaný předmět'}</b>
-                                {h >= 34 && <span>{it.kind === 'live' ? 'právě teď' : it.title || fmtDuration(it.session!.durationSec, { short: true })}</span>}
+                                {h >= 34 && <span>{it.kind === 'live' ? 'právě teď' : it.title || fmtDuration(it.session!.durationSec)}</span>}
                                 {h >= 50 && <span className="t">{timeLabel}</span>}
                               </div>
                             );
@@ -445,7 +445,7 @@ export function PlannerPage() {
                 legend.map(([id, sec]) => (
                   <span key={id} className="legend-subj">
                     <i style={{ background: subj.get(id)?.color }} />
-                    {subj.get(id)?.name ?? 'Smazaný předmět'} <span className="num faint">{fmtDuration(sec, { short: true })}</span>
+                    {subj.get(id)?.name ?? 'Smazaný předmět'} <span className="num faint">{fmtDuration(sec)}</span>
                   </span>
                 ))
               )}
@@ -476,8 +476,8 @@ export function PlannerPage() {
                     <div className="row between small">
                       <SubjectTag id={s.id} />
                       <span className="num faint">
-                        <span style={{ color: 'var(--text)' }}>{fmtDuration(st, { short: true })}</span> odučeno · plán {fmtDuration(p, { short: true })}
-                        {goal ? ` · cíl ${fmtDuration(goal, { short: true })}` : ''}
+                        <span style={{ color: 'var(--text)' }}>{fmtDuration(st)}</span> odučeno · plán {fmtDuration(p)}
+                        {goal ? ` · cíl ${fmtDuration(goal)}` : ''}
                       </span>
                     </div>
                     <Bar value={target ? st / target : st ? 1 : 0} color={s.color} />

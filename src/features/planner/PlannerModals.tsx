@@ -6,7 +6,7 @@ import { Field, Modal, Switch, useToast } from '../../components/ui';
 import { useRemoveWithUndo } from '../../components/undo';
 import { addDays, dayKey, fmtDayLabel, parseDayKey, startOfDay, toTimeInput } from '../../lib/time';
 import { navigate } from '../../lib/router';
-import { blockTopic } from '../../lib/blockTopic';
+import { blockTopics } from '../../lib/blockTopic';
 import { SubjectSelect } from '../subjects/SubjectSelect';
 import { useTimer } from '../timer/TimerContext';
 import { SessionModal } from '../sessions/HistoryPage';
@@ -85,7 +85,8 @@ export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock
             <button
               className="btn"
               onClick={() => {
-                timer.configure({ subjectId: block.subjectId, topic: blockTopic(block.title), planBlockId: block.id });
+                const [topic = '', ...extraTopics] = blockTopics(block.title);
+                timer.configure({ subjectId: block.subjectId, topic, extraTopics, planBlockId: block.id });
                 navigate('casovac');
                 onClose();
               }}
