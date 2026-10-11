@@ -11,6 +11,7 @@ import { SubjectTag } from '../subjects/SubjectSelect';
 import { SessionModal } from '../sessions/HistoryPage';
 import { useTimer } from '../timer/TimerContext';
 import { BlockModal, ExamModal, ExportModal } from './PlannerModals';
+import { blockHasSession } from './match';
 import { LectureModal, TimetableModal } from './TimetableModal';
 import { Lecture, lecturesIn } from '../../lib/timetable';
 import './planner.css';
@@ -137,8 +138,11 @@ export function PlannerPage() {
     const out: CalItem[] = [];
     if (layer !== 'done') for (const l of lectures) out.push({ kind: 'lecture', id: `l-${l.timetableId}-${l.key}`, subjectId: '', start: l.start, end: l.end, title: l.title, lecture: l });
     if (layer !== 'done')
-      for (const b of blocks)
+      for (const b of blocks) {
+        // Hotový blok, ke kterému je zapsaný čas, ve „Vše“ nahradí plné sezení – jinak by stály vedle sebe dvakrát.
+        if (layer === 'all' && b.done && blockHasSession(weekSessions, b)) continue;
         out.push({ kind: 'plan', id: `p-${b.id}`, subjectId: b.subjectId, start: b.start, end: b.start + b.durationMin * MIN, title: b.title, block: b });
+      }
     if (layer !== 'plan') {
       for (const s of weekSessions) out.push({ kind: 'done', id: `s-${s.id}`, subjectId: s.subjectId, start: s.start, end: s.end, title: s.topic, session: s });
       const ws = timer.state.workStartedAt;

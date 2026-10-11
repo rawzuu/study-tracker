@@ -122,3 +122,42 @@ export function clusterReviews(reviews: AnkiReview[], gapMs = 10 * 60_000): { de
   }
   return out;
 }
+
+/**
+ * Kolikrát se karta dnes průměrně ukáže: nová projde výukovými kroky (výchozí 1 min a 10 min → 2–3 odpovědi,
+ * s „Znovu“ víc), karta ve výuce ještě 1–2, opakovaná občas spadne do „Znovu“ a vrátí se.
+ */
+export const ANSWERS_PER_CARD = { new: 2.5, learn: 1.5, review: 1.1 };
+
+/** Výchozí tempo, dokud není z čeho počítat (sekund na odpověď). */
+const DEFAULT_SEC_PER_ANSWER = 10;
+
+/**
+ * Tvoje tempo v sekundách na jednu odpověď: z Anki sezení za posledních 30 dní (čas odpovědí z Anki / počet odpovědí),
+ * jinak z dneška, jinak 10 s.
+ */
+export function ankiSecPerAnswer(
+  sessions: { mode: string; start: number; durationSec: number; note: string; deletedAt?: number }[],
+  today: { reviewedToday: number; msToday: number } | undefined,
+  now = Date.now(),
+): number {
+  let sec = 0;
+  let answers = 0;
+  for (const s of sessions) {
+    if (s.mode !== 'anki' || s.deletedAt || s.start < now - 30 * 86_400_000) continue;
+    const n = Number(/(\d+) karet/.exec(s.note)?.[1] ?? 0);
+    if (n > 0) {
+      sec += s.durationSec;
+      answers += n;
+    }
+  }
+  if (answers >= 50) return sec / answers;
+  if (today && today.reviewedToday >= 10 && today.msToday > 0) return today.msToday / 1000 / today.reviewedToday;
+  return DEFAULT_SEC_PER_ANSWER;
+}
+
+/** Odhad času na dnešní karty v minutách (zaokrouhleno na 5 min, 5–180). */
+export function ankiEstimateMin(decks: { newCount: number; learnCount: number; reviewCount: number }[], secPerAnswer: number): number {
+  const answers = decks.reduce((a, d) => a + d.newCount * ANSWERS_PER_CARD.new + d.learnCount * ANSWERS_PER_CARD.learn + d.reviewCount * ANSWERS_PER_CARD.review, 0);
+  return Math.max(5, Math.min(180, Math.round((answers * secPerAnswer) / 60 / 5) * 5));
+}

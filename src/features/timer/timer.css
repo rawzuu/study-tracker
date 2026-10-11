@@ -14,10 +14,18 @@
   right: 10px;
 }
 
+/* Kruh roste s oknem: na notebooku zhruba 360 px, na velkém monitoru až 640 px; obsah uvnitř roste s ním (cqi = % šířky kruhu). */
 .ring {
   position: relative;
-  max-width: 100%;
+  width: min(100%, 340px);
   aspect-ratio: 1;
+  container-type: inline-size;
+}
+.timer-card .ring {
+  width: min(100%, clamp(300px, 56vh, 640px));
+}
+.zen .timer-card .ring {
+  width: min(100%, clamp(320px, 72vh, 820px));
 }
 .ring svg {
   display: block;
@@ -64,7 +72,7 @@
 .ring-phase {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 17px;
+  font-size: clamp(14px, 4.7cqi, 28px);
   color: var(--text-3);
 }
 .ring.running .ring-phase {
@@ -76,10 +84,16 @@
 .ring-time {
   font-family: var(--serif);
   font-variant-numeric: lining-nums tabular-nums;
-  font-size: clamp(56px, 13vw, 84px);
+  font-size: 24cqi;
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 1;
+}
+.ring-time.long {
+  font-size: 17cqi; /* „1:30:00“ je širší – musí se vejít dovnitř kruhu */
+}
+.ring-sub .label {
+  font-size: clamp(12px, 3.3cqi, 18px);
 }
 .ring.paused .ring-time {
   animation: blink 1.6s ease-in-out infinite;
@@ -95,7 +109,7 @@
   gap: 5px;
 }
 .rounds i {
-  width: 14px;
+  width: clamp(14px, 3.9cqi, 22px);
   height: 3px;
   border-radius: 1px;
   background: var(--line-strong);

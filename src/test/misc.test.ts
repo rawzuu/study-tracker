@@ -3,7 +3,7 @@ import { FAMILIES, SINGLES, evaluate } from '../features/achievements/achievemen
 import { buildIcs } from '../features/planner/ics';
 import { blockHasSession, matchPlanBlocks } from '../features/planner/match';
 import { escapeHtml } from '../features/stats/charts';
-import { clusterReviews } from '../lib/anki';
+import { ankiEstimateMin, ankiSecPerAnswer, clusterReviews } from '../lib/anki';
 import { blockTopic, blockTopics } from '../lib/blockTopic';
 import { sessionsToCsv } from '../lib/csv';
 import { capitalize, fmtDec, fmtDuration, isoWeek } from '../lib/time';
@@ -120,5 +120,20 @@ describe('blok plánu → téma a zápis', () => {
     expect(blockHasSession([session({ subjectId: 'x', start: NOW, end: NOW + 60 * M })], b)).toBe(false);
     expect(blockHasSession([session({ subjectId: 's', start: NOW + 55 * M, end: NOW + 90 * M })], b)).toBe(false);
     expect(blockHasSession([session({ subjectId: 's', start: NOW, end: NOW + 60 * M, deletedAt: NOW })], b)).toBe(false);
+  });
+});
+
+describe('odhad času na Anki', () => {
+  it('nové karty se počítají víckrát (131 karet, z toho 60 nových ≈ 30 min při 8 s)', () => {
+    expect(ankiEstimateMin([{ newCount: 60, learnCount: 0, reviewCount: 71 }], 8)).toBe(30);
+    expect(ankiEstimateMin([{ newCount: 0, learnCount: 0, reviewCount: 131 }], 8)).toBe(20);
+    expect(ankiEstimateMin([{ newCount: 0, learnCount: 0, reviewCount: 3 }], 8)).toBe(5);
+  });
+  it('tempo z historie, jinak z dneška, jinak 10 s', () => {
+    const anki = (n: number, sec: number, daysAgo = 1, mode = 'anki') => ({ mode, start: NOW - daysAgo * D, durationSec: sec, note: `${n} karet` });
+    expect(ankiSecPerAnswer([anki(40, 300), anki(60, 500)], undefined, NOW)).toBe(8);
+    expect(ankiSecPerAnswer([anki(40, 300)], { reviewedToday: 20, msToday: 120_000 }, NOW)).toBe(6); // málo historie → dnešek
+    expect(ankiSecPerAnswer([anki(400, 3000, 40)], undefined, NOW)).toBe(10); // starší než 30 dní se nepočítá
+    expect(ankiSecPerAnswer([anki(400, 3000, 1, 'pomodoro')], undefined, NOW)).toBe(10);
   });
 });

@@ -23,7 +23,7 @@ function arcPath(cx: number, r: number, from: number, to: number) {
 }
 
 /** Kruh z dílků se stupnicí v minutách. Odpočet = délka fáze, stopky = jedna hodina. */
-export function TimerRing({ size = 340 }: { size?: number }) {
+export function TimerRing() {
   const { state, mode, elapsedMs, remainingMs, progress } = useTimer();
   const isBreak = state.phase !== 'work';
   const idle = state.status === 'idle';
@@ -58,7 +58,7 @@ export function TimerRing({ size = 340 }: { size?: number }) {
   }
 
   return (
-    <div className={`ring ${isBreak ? 'is-break' : ''} ${state.status}`} style={{ width: size }}>
+    <div className={`ring ${isBreak ? 'is-break' : ''} ${state.status}`}>
       <svg viewBox={`0 0 ${V} ${V}`} aria-hidden="true">
         <g>{segs}</g>
         {labels.map((l) => (
@@ -69,7 +69,7 @@ export function TimerRing({ size = 340 }: { size?: number }) {
       </svg>
       <div className="ring-center">
         <span className="ring-phase">{label}</span>
-        <div className="ring-time">{display}</div>
+        <div className={`ring-time ${display.length > 5 ? 'long' : ''}`}>{display}</div>
         <div className="ring-sub">
           <span className="label">{mode.name}</span>
           {mode.kind === 'interval' && mode.roundsBeforeLong < 99 && (
@@ -259,7 +259,7 @@ export function TimerPage() {
           <button className="btn ghost icon sm zen-toggle" onClick={() => setZen(!zen)} title={zen ? 'Ukončit zen režim' : 'Zen režim'}>
             {zen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
-          <TimerRing size={zen ? 440 : 360} />
+          <TimerRing />
 
           {subject && state.status !== 'idle' && (
             <div className="now-studying">

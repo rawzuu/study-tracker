@@ -1,6 +1,7 @@
 import { AppData, Session, Subject, Topic, alive } from '../data/schema';
 import { ctxFrom, isDue, retrievability } from '../features/topics/schedule';
 import { avgFocus } from './stats';
+import { ankiEstimateMin, ankiSecPerAnswer } from './anki';
 import { blockTopic, blockTopics } from './blockTopic';
 import { lectureSubject, lecturesIn } from './timetable';
 import { DAY, HOUR, MIN, addDays, minutesOfDay, parseDayKey, startOfDay, startOfWeek, weekdayIdx } from './time';
@@ -295,8 +296,10 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
   if (!sim && snap && startOfDay(snap.at) === today) {
     const due = snap.decks.reduce((a, d) => a + d.newCount + d.learnCount + d.reviewCount, 0);
     if (due > 0) {
-      const secPerCard = snap.reviewedToday > 10 && snap.msToday > 0 ? snap.msToday / 1000 / snap.reviewedToday : 9;
-      const minutes = Math.max(5, Math.min(60, Math.round((due * secPerCard) / 60 / 5) * 5));
+      // Odhad podle tvého tempa z historie Anki; nové karty se první den ukazují víckrát (výukové kroky).
+      const secPerAnswer = ankiSecPerAnswer(data.sessions, snap, now);
+      const minutes = ankiEstimateMin(snap.decks, secPerAnswer);
+      const fresh = snap.decks.reduce((a, d) => a + d.newCount, 0);
       const score = 0.12 + 0.25 * clamp(due / 150) + (lowFocus ? 0.15 : 0);
       out.push({
         key: 'anki',
@@ -310,7 +313,10 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
         modeId: 'stopwatch',
         score,
         signals: { E: 0, R: clamp(due / 150), G: 0, N: 0, P: 0, X: 0 },
-        reasons: [`odhad ~${minutes} min`, ...(lowFocus ? ['teď ti soustředění obvykle jde hůř – kartičky jsou ideální'] : [])],
+        reasons: [
+          `odhad ~${minutes} min podle tvého tempa (${Math.round(secPerAnswer)} s na odpověď)`,
+          ...(fresh ? [`${fresh} ${fresh === 1 ? 'nová karta se' : fresh < 5 ? 'nové karty se' : 'nových karet se'} dnes ukáže víckrát`] : []),
+          ...(lowFocus ? ['teď ti soustředění obvykle jde hůř – kartičky jsou ideální'] : [])],
       });
     }
   }
