@@ -6,7 +6,7 @@ import { FEED_FILE, buildFeed, feedHttpsUrl, feedWebcalUrl, publishFeed, readFee
 import { createGist } from '../../data/github';
 import { useStore } from '../../data/store';
 import { SCHEMA_VERSION, ThemePref, alive, uid } from '../../data/schema';
-import { GithubConfig, fetchRemote, loadGithubConfig, saveGithubConfig, tokenDaysLeft } from '../../data/github';
+import { GithubConfig, GithubError, fetchLogin, fetchRemote, loadGithubConfig, saveGithubConfig, tokenDaysLeft } from '../../data/github';
 import { migrate } from '../../data/migrations';
 import { serialize } from '../../data/merge';
 import { Field, Segmented, Switch, useToast } from '../../components/ui';
@@ -226,28 +226,34 @@ function MenuOptions() {
 // ============================================================
 // GitHub synchronizace
 // ============================================================
+const NEW_GITHUB: GithubConfig = { owner: '', repo: 'study-tracker-data', branch: 'main', path: 'data.json', token: '' };
+
 function SyncSection() {
   const { sync, syncNow, refreshSyncConfig } = useStore();
   const toast = useToast();
   const existing = loadGithubConfig();
   const [editing, setEditing] = useState(!existing);
-  const [cfg, setCfg] = useState<GithubConfig>(
-    existing ?? { owner: '', repo: 'study-tracker-data', branch: 'main', path: 'data.json', token: '' },
-  );
+  const [cfg, setCfg] = useState<GithubConfig>(existing ?? NEW_GITHUB);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const connect = async () => {
     setTesting(true);
     setError(null);
+    let full = cfg;
     try {
-      await fetchRemote(cfg); // ověří token i přístup k repu
-      saveGithubConfig(cfg);
+      // GitHub jméno se zjistí z tokenu, takže stačí vložit jen token
+      if (!full.owner) full = { ...full, owner: await fetchLogin(full.token) };
+      await fetchRemote(full); // ověří token i přístup k repu
+      saveGithubConfig(full);
+      setCfg(full);
       setEditing(false);
       refreshSyncConfig();
       toast('Synchronizace zapnuta');
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (e instanceof GithubError && e.status === 404) {
+        setError(`Repo ${full.owner}/${full.repo} se nenašlo, nebo k němu token nemá přístup (kroky 0 a 2).`);
+      } else setError(e instanceof Error ? e.message : String(e));
     } finally {
       setTesting(false);
     }
@@ -330,6 +336,7 @@ function SyncSection() {
               onClick={() => {
                 if (confirm('Odpojit GitHub? Data v repu i v prohlížeči zůstanou, jen se přestanou synchronizovat.')) {
                   saveGithubConfig(null);
+                  setCfg(NEW_GITHUB); // jiný token pak může patřit jinému účtu – jméno se zjistí znovu
                   refreshSyncConfig();
                 }
               }}
@@ -363,23 +370,9 @@ function SyncSection() {
               <span>
                 3. <i>Permissions</i> → <i>Contents</i> → <b>Read and write</b>. (Pro odebíraný kalendář navíc v <i>Account permissions</i> → <i>Gists</i> → <b>Read and write</b>.)
               </span>
-              <span>4. Expiraci nastav třeba na rok, token zkopíruj a vlož sem. Na každém zařízení (počítač, mobil) se token vkládá zvlášť.</span>
+              <span>4. Expiraci nastav třeba na rok, token zkopíruj a vlož sem. Nic dalšího vyplňovat nemusíš. Na každém zařízení (počítač, mobil) se token vkládá zvlášť.</span>
               <span className="faint">Token zůstává jen v tomto prohlížeči a má přístup pouze k datovému repu.</span>
             </div>
-          </div>
-          <div className="grid cols-2" style={{ gap: 10 }}>
-            <Field label="Vlastník (uživatel)">
-              <input className="input" placeholder="tvoje GitHub jméno" value={cfg.owner} onChange={(e) => setCfg({ ...cfg, owner: e.target.value.trim() })} />
-            </Field>
-            <Field label="Repo s daty">
-              <input className="input" value={cfg.repo} onChange={(e) => setCfg({ ...cfg, repo: e.target.value.trim() })} />
-            </Field>
-            <Field label="Větev">
-              <input className="input" value={cfg.branch} onChange={(e) => setCfg({ ...cfg, branch: e.target.value.trim() })} />
-            </Field>
-            <Field label="Soubor">
-              <input className="input" value={cfg.path} onChange={(e) => setCfg({ ...cfg, path: e.target.value.trim() })} />
-            </Field>
           </div>
           <div className="grid cols-2" style={{ gap: 10 }}>
             <Field label="Token">
@@ -396,6 +389,23 @@ function SyncSection() {
               <input className="input" type="date" value={cfg.expires ?? ''} onChange={(e) => setCfg({ ...cfg, expires: e.target.value || undefined })} />
             </Field>
           </div>
+          <details className="menu-options">
+            <summary className="small faint">Jiné repo, větev nebo soubor</summary>
+            <div className="grid cols-2" style={{ gap: 10, marginTop: 10 }}>
+              <Field label="GitHub jméno">
+                <input className="input" placeholder="zjistí se z tokenu" value={cfg.owner} onChange={(e) => setCfg({ ...cfg, owner: e.target.value.trim() })} />
+              </Field>
+              <Field label="Repo s daty">
+                <input className="input" value={cfg.repo} onChange={(e) => setCfg({ ...cfg, repo: e.target.value.trim() })} />
+              </Field>
+              <Field label="Větev">
+                <input className="input" value={cfg.branch} onChange={(e) => setCfg({ ...cfg, branch: e.target.value.trim() })} />
+              </Field>
+              <Field label="Soubor">
+                <input className="input" value={cfg.path} onChange={(e) => setCfg({ ...cfg, path: e.target.value.trim() })} />
+              </Field>
+            </div>
+          </details>
           {error && (
             <div className="callout bad">
               <AlertTriangle size={16} />
@@ -403,7 +413,7 @@ function SyncSection() {
             </div>
           )}
           <div className="row">
-            <button className="btn primary" onClick={connect} disabled={testing || !cfg.owner || !cfg.repo || !cfg.token}>
+            <button className="btn primary" onClick={connect} disabled={testing || !cfg.repo || !cfg.branch || !cfg.path || !cfg.token}>
               <CloudUpload size={15} /> {testing ? 'Ověřuji…' : 'Připojit a synchronizovat'}
             </button>
             {existing && (

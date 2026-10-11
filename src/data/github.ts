@@ -51,10 +51,10 @@ export class GithubError extends Error {
   }
 }
 
-function headers(c: GithubConfig, accept = 'application/vnd.github+json'): HeadersInit {
+function headers(token: string, accept = 'application/vnd.github+json'): HeadersInit {
   return {
     Accept: accept,
-    Authorization: `Bearer ${c.token}`,
+    Authorization: `Bearer ${token}`,
     'X-GitHub-Api-Version': '2022-11-28',
   };
 }
@@ -87,15 +87,22 @@ function utf8ToB64(text: string): string {
   return btoa(bin);
 }
 
+/** GitHub jméno majitele tokenu – při zapnutí zálohy pak stačí vložit jen token. */
+export async function fetchLogin(token: string): Promise<string> {
+  const res = await fetch('https://api.github.com/user', { headers: headers(token), cache: 'no-store' });
+  if (!res.ok) throw new GithubError(describe(res.status), res.status);
+  return ((await res.json()) as { login: string }).login;
+}
+
 /** Stáhne soubor s daty. Vrací null, pokud ještě neexistuje. */
 export async function fetchRemote(c: GithubConfig): Promise<{ text: string; sha: string } | null> {
   const url = `${contentsUrl(c)}?ref=${encodeURIComponent(c.branch)}`;
-  const res = await fetch(url, { headers: headers(c), cache: 'no-store' });
+  const res = await fetch(url, { headers: headers(c.token), cache: 'no-store' });
   if (res.status === 404) {
     // Rozliš "soubor neexistuje" od "repo neexistuje / bez přístupu".
     const repoRes = await fetch(
       `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`,
-      { headers: headers(c), cache: 'no-store' },
+      { headers: headers(c.token), cache: 'no-store' },
     );
     if (!repoRes.ok) throw new GithubError(describe(repoRes.status), repoRes.status);
     return null;
@@ -106,7 +113,7 @@ export async function fetchRemote(c: GithubConfig): Promise<{ text: string; sha:
     return { text: b64ToUtf8(json.content), sha: json.sha };
   }
   // Soubory nad 1 MB API nevrací v `content` – stáhneme je jako raw.
-  const raw = await fetch(url, { headers: headers(c, 'application/vnd.github.raw+json'), cache: 'no-store' });
+  const raw = await fetch(url, { headers: headers(c.token, 'application/vnd.github.raw+json'), cache: 'no-store' });
   if (!raw.ok) throw new GithubError(describe(raw.status), raw.status);
   return { text: await raw.text(), sha: json.sha };
 }
@@ -115,7 +122,7 @@ export async function fetchRemote(c: GithubConfig): Promise<{ text: string; sha:
 export async function pushRemote(c: GithubConfig, text: string, sha: string | null, message: string): Promise<string> {
   const res = await fetch(contentsUrl(c), {
     method: 'PUT',
-    headers: { ...headers(c), 'Content-Type': 'application/json' },
+    headers: { ...headers(c.token), 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message,
       content: utf8ToB64(text),

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseIcs } from '../lib/ical';
 import { diffTimetable, lecturesIn, replaceEvents } from '../lib/timetable';
 import { busyIntervals, findSlot } from '../lib/dayplan';
@@ -362,5 +362,20 @@ describe('hlídání tokenu', () => {
     expect(tokenDaysLeft({ ...cfg, expires: '2026-10-14' }, NOW)).toBe(7);
     expect(tokenDaysLeft({ ...cfg, expires: '2026-10-07' }, NOW)).toBe(0);
     expect(tokenDaysLeft({ ...cfg, expires: 'nesmysl' }, NOW)).toBe(null);
+  });
+
+  it('GitHub jméno se zjistí z tokenu (nic se neodesílá jinam)', async () => {
+    const { fetchLogin } = await import('../data/github');
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response(JSON.stringify({ login: 'kamarad' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      expect(await fetchLogin('t')).toBe('kamarad');
+      expect(fetchMock.mock.calls[0][0]).toBe('https://api.github.com/user');
+      expect((fetchMock.mock.calls[0][1]?.headers as Record<string, string>).Authorization).toBe('Bearer t');
+      fetchMock.mockResolvedValueOnce(new Response('', { status: 401 }));
+      await expect(fetchLogin('spatny')).rejects.toThrow('Neplatný token.');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
