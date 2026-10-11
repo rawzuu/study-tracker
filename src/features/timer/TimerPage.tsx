@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BellOff, Check, Coffee, Maximize2, Minimize2, Pause, Play, SkipForward, Square } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { NoiseType, alive } from '../../data/schema';
-import { fmtClock, fmtHM, startOfDay } from '../../lib/time';
+import { fmtClock, fmtDuration, fmtHM, startOfDay } from '../../lib/time';
 import { inRange, totalSec } from '../../lib/stats';
 import { NOISE_LABEL, startNoise, stopNoise } from '../../lib/noise';
 import { unlockAudio } from '../../lib/alerts';
-import { Segmented } from '../../components/ui';
+import { Segmented, useToast } from '../../components/ui';
 import { SubjectSelect } from '../subjects/SubjectSelect';
 import { BREAK_TIPS, allModes } from './modes';
 import { useTimer } from './TimerContext';
@@ -87,7 +87,11 @@ export function TimerRing({ size = 340 }: { size?: number }) {
 
 export function TimerControls({ compact }: { compact?: boolean }) {
   const t = useTimer();
+  const { data } = useStore();
+  const toast = useToast();
   const { state, mode } = t;
+  // Blok kratší než minimum (Nastavení → Časovač) se neukládá – ať to nezmizí potichu.
+  const tellShort = (short: boolean) => short && toast(`Blok kratší než ${fmtDuration(data.settings.minSessionSec)} se neukládá`);
   const isWork = state.phase === 'work';
   const canStart = !!state.subjectId;
   const sz = compact ? '' : 'lg';
@@ -131,12 +135,12 @@ export function TimerControls({ compact }: { compact?: boolean }) {
         </button>
       )}
       {isWork && mode.kind !== 'stopwatch' && (
-        <button className={`btn ${sz}`} onClick={t.finishWork} title="Uložit blok a jít na pauzu">
+        <button className={`btn ${sz}`} onClick={() => tellShort(t.finishWork())} title="Uložit blok a jít na pauzu">
           <Coffee size={15} /> {mode.kind === 'flowtime' ? 'Na pauzu' : 'Hotovo'}
         </button>
       )}
       {isWork ? (
-        <button className={`btn ghost ${sz}`} onClick={t.stop} title="Uložit a ukončit">
+        <button className={`btn ghost ${sz}`} onClick={() => tellShort(t.stop())} title="Uložit a ukončit">
           <Square size={13} fill="currentColor" /> Ukončit
         </button>
       ) : (

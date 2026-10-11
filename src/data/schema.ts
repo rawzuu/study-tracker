@@ -207,6 +207,8 @@ export interface Settings {
   streakRestDays: number; // kolik dní volna týdně sérii nepřeruší (0–2)
   streakMinMin: number; // od kolika minut učení se den počítá do série (0 = jakékoli)
   tokenWarning: boolean; // upozornit, když synchronizace s GitHubem selhává nebo končí platnost tokenu
+  // v2.6.1+
+  blockDoneLogs: boolean; // „Hotovo“ u bloku plánu nabídne zapsat jeho čas jako odučený
 }
 
 export interface AppData {
@@ -273,6 +275,7 @@ export function defaultSettings(): Settings {
     streakRestDays: 0,
     streakMinMin: 0,
     tokenWarning: true,
+    blockDoneLogs: true,
   };
 }
 

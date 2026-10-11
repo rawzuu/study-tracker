@@ -6,9 +6,12 @@ import { Field, Modal, Switch, useToast } from '../../components/ui';
 import { useRemoveWithUndo } from '../../components/undo';
 import { addDays, dayKey, fmtDayLabel, parseDayKey, startOfDay, toTimeInput } from '../../lib/time';
 import { navigate } from '../../lib/router';
+import { blockTopic } from '../../lib/blockTopic';
 import { SubjectSelect } from '../subjects/SubjectSelect';
 import { useTimer } from '../timer/TimerContext';
+import { SessionModal } from '../sessions/HistoryPage';
 import { buildIcs, downloadFile } from './ics';
+import { blockHasSession } from './match';
 import { reviewDays } from './spaced';
 
 function combine(date: string, time: string): number {
@@ -22,7 +25,8 @@ function combine(date: string, time: string): number {
 // Blok plánu
 // ============================================================
 export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock; initialStart?: number; onClose: () => void }) {
-  const { upsert, upsertMany } = useStore();
+  const { data, upsert, upsertMany } = useStore();
+  const [logging, setLogging] = useState(false);
   const removeWithUndo = useRemoveWithUndo();
   const timer = useTimer();
   const toast = useToast();
@@ -58,6 +62,8 @@ export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock
     onClose();
   };
 
+  if (logging && block) return <SessionModal planBlock={block} onClose={onClose} />;
+
   return (
     <Modal
       title={block ? 'Upravit blok' : 'Nový blok učení'}
@@ -79,7 +85,7 @@ export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock
             <button
               className="btn"
               onClick={() => {
-                timer.configure({ subjectId: block.subjectId, topic: block.title, planBlockId: block.id });
+                timer.configure({ subjectId: block.subjectId, topic: blockTopic(block.title), planBlockId: block.id });
                 navigate('casovac');
                 onClose();
               }}
@@ -91,6 +97,11 @@ export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock
             <button
               className="btn"
               onClick={() => {
+                // Hotovo bez zapsaného času → nabídnout zápis, aby se blok započítal do přehledu (jde vypnout v Nastavení → Funkce).
+                if (!block.done && data.settings.blockDoneLogs !== false && !blockHasSession(data.sessions, block)) {
+                  setLogging(true);
+                  return;
+                }
                 upsert('planBlocks', { ...block, done: !block.done });
                 onClose();
               }}

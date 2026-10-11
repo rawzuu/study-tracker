@@ -26,7 +26,7 @@
   text-align: right;
 }
 .c-new {
-  color: #5eb1ef;
+  color: var(--focus);
 }
 .c-learn {
   color: var(--danger);

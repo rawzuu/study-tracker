@@ -15,9 +15,11 @@ function SubjectModal({ subject, onClose }: { subject?: Subject; onClose: () => 
   const [color, setColor] = useState(subject?.color ?? SUBJECT_COLORS.find((c) => !used.has(c)) ?? SUBJECT_COLORS[0]);
   const [goalH, setGoalH] = useState(subject ? subject.weeklyGoalMin / 60 : 0);
   const sessions = subject ? alive(data.sessions).filter((s) => s.subjectId === subject.id).length : 0;
+  // Předmět se stejným názvem už existuje – druhý by rozdělil statistiky na dvě půlky.
+  const duplicate = alive(data.subjects).find((s) => s.id !== subject?.id && s.name.trim().toLocaleLowerCase('cs') === name.trim().toLocaleLowerCase('cs'));
 
   const save = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || duplicate) return;
     upsert('subjects', {
       ...(subject ?? { id: uid(), archived: false }),
       name: name.trim(),
@@ -44,14 +46,14 @@ function SubjectModal({ subject, onClose }: { subject?: Subject; onClose: () => 
               <Trash2 size={15} /> Smazat
             </button>
           )}
-          <button className="btn primary" onClick={save} disabled={!name.trim()}>
+          <button className="btn primary" onClick={save} disabled={!name.trim() || !!duplicate}>
             Uložit
           </button>
         </>
       }
     >
       <div className="stack">
-        <Field label="Název">
+        <Field label="Název" hint={duplicate ? `Předmět „${duplicate.name}“ už existuje${duplicate.archived ? ' (v archivu)' : ''}.` : undefined}>
           <input className="input" autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} />
         </Field>
         <Field label="Barva">

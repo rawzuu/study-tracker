@@ -5,9 +5,10 @@ import { loadGithubConfig, tokenDaysLeft } from '../../data/github';
 import { alive } from '../../data/schema';
 import { Empty } from '../../components/ui';
 import { Chart, chartColors, useTheme } from '../../components/Chart';
-import { DAY, addDays, dayKey, fmtClock, fmtDuration, fmtHM, fmtTime, isoWeek, parseDayKey, plural, startOfDay, startOfWeek, WEEKDAYS_SHORT } from '../../lib/time';
+import { DAY, addDays, dayKey, fmtClock, fmtDuration, fmtHM, fmtTime, isoWeek, parseDayKey, plural, startOfDay, startOfWeek, WEEKDAYS_SHORT, fmtDec } from '../../lib/time';
 import { avgFocus, byDay, bySubject, inRange, streaks, totalSec } from '../../lib/stats';
 import { navigate } from '../../lib/router';
+import { blockTopic } from '../../lib/blockTopic';
 import { calendarHeatmap } from '../stats/charts';
 import { SubjectTag } from '../subjects/SubjectSelect';
 import { useTimer } from '../timer/TimerContext';
@@ -347,7 +348,7 @@ export function Dashboard() {
               <div className="legend-row">
                 <i style={{ background: 'var(--focus)' }} />
                 <span className="grow muted">Soustředění</span>
-                <span className="serif legend-val">{focus7 ? focus7.toFixed(1).replace('.', ',') : '—'}</span>
+                <span className="serif legend-val">{focus7 ? fmtDec(focus7) : '—'}</span>
                 <span className="legend-of">{focus7 ? 'z 5 · 7 dní' : 'bez hodnocení'}</span>
               </div>
               <div className="legend-foot">
@@ -400,7 +401,7 @@ export function Dashboard() {
                     <Check size={14} color="var(--success)" aria-label="Hotovo" />
                   ) : (
                     timer.state.status === 'idle' && (
-                      <button className="btn icon sm" title="Spustit časovač" aria-label="Spustit časovač" onClick={() => startTopic(b.subjectId, b.title, b.id)}>
+                      <button className="btn icon sm" title="Spustit časovač" aria-label="Spustit časovač" onClick={() => startTopic(b.subjectId, blockTopic(b.title), b.id)}>
                         <Play size={11} fill="currentColor" />
                       </button>
                     )

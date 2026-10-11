@@ -1,6 +1,6 @@
 import { PlanBlock, Session, Subject } from '../data/schema';
 import { StreakRules, avgFocus, byDay, byHour, bySubject, inRange, streakDays, streakRuns, totalSec } from './stats';
-import { DAY, addDays, dayKey, fmtDuration, startOfDay, weekdayIdx } from './time';
+import { DAY, addDays, dayKey, fmtDuration, startOfDay, weekdayIdx, fmtDec } from './time';
 
 /**
  * Výpočty pro měsíční report a týdenní reflexi.
@@ -146,7 +146,7 @@ export function pct(cur: number, prev: number): number | null {
 
 /** Zajímavé postřehy v lidské řeči. */
 export function highlights(cur: PeriodStats, prev: PeriodStats, subjects: Subject[]): string[] {
-  const name = (id: string) => subjects.find((s) => s.id === id)?.name ?? '?';
+  const name = (id: string) => subjects.find((s) => s.id === id)?.name ?? 'Smazaný předmět';
   const out: string[] = [];
   if (!cur.sessions) return out;
 
@@ -170,7 +170,7 @@ export function highlights(cur: PeriodStats, prev: PeriodStats, subjects: Subjec
     const top = focused[0];
     const low = focused[focused.length - 1];
     if ((top.focus ?? 0) - (low.focus ?? 0) >= 0.3)
-      out.push(`Nejlépe se soustředíš ${DAYPART_WHEN[top.label]} (${top.focus!.toFixed(1)} / 5), nejhůř ${DAYPART_WHEN[low.label]} (${low.focus!.toFixed(1)}).`);
+      out.push(`Nejlépe se soustředíš ${DAYPART_WHEN[top.label]} (${fmtDec(top.focus!)} / 5), nejhůř ${DAYPART_WHEN[low.label]} (${fmtDec(low.focus!)}).`);
   }
 
   // největší růst předmětu

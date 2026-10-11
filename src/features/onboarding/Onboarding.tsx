@@ -36,7 +36,8 @@ export function Onboarding() {
   };
 
   const saveSubjects = () => {
-    const clean = names.map((n) => n.trim()).filter(Boolean);
+    // Stejný název dvakrát (třeba „Matematika“ a „matematika “) založí jen jeden předmět.
+    const clean = names.map((n) => n.trim()).filter((n, i, all) => n && all.findIndex((x) => x.toLocaleLowerCase('cs') === n.toLocaleLowerCase('cs')) === i);
     if (clean.length) {
       upsertMany(
         'subjects',
@@ -71,7 +72,7 @@ export function Onboarding() {
                 <b>Časovač</b> – Pomodoro, 50/10, 90 min, Flowtime…
               </li>
               <li>
-                <b>Opakování</b> – témata se vrací po 1, 3, 7, 14… dnech
+                <b>Opakování</b> – téma se vrátí ve chvíli, kdy by se začalo zapomínat
               </li>
               <li>
                 <b>Statistiky a měsíční report</b> – kdy a jak se učíš nejlépe

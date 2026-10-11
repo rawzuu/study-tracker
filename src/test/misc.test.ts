@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { FAMILIES, SINGLES, evaluate } from '../features/achievements/achievements';
 import { buildIcs } from '../features/planner/ics';
-import { matchPlanBlocks } from '../features/planner/match';
+import { blockHasSession, matchPlanBlocks } from '../features/planner/match';
 import { escapeHtml } from '../features/stats/charts';
 import { clusterReviews } from '../lib/anki';
+import { blockTopic } from '../lib/blockTopic';
 import { sessionsToCsv } from '../lib/csv';
 import { capitalize, fmtHM, isoWeek } from '../lib/time';
 import { D, H, M, NOW, block, data, session, subject } from './helpers';
@@ -79,5 +80,31 @@ describe('formát čísel na přehledu', () => {
   it('velké písmeno jen na začátku', () => {
     expect(capitalize('čtvrtek 8. října')).toBe('Čtvrtek 8. října');
     expect(capitalize('')).toBe('');
+  });
+});
+
+describe('blok plánu → téma a zápis', () => {
+  it('z vygenerovaného názvu vezme skutečné téma', () => {
+    expect(blockTopic('Opakování: Derivace, Limity +2')).toBe('Derivace');
+    expect(blockTopic('Opakování: Derivace')).toBe('Derivace');
+    expect(blockTopic('Nové téma: Řady')).toBe('Řady');
+    expect(blockTopic('Pokračovat: Ukazatele')).toBe('Ukazatele');
+    expect(blockTopic('Příprava na zkoušku: Zápočtový test')).toBe('Zápočtový test');
+    expect(blockTopic('Opakování: Zápočtový test (−3 d)')).toBe('Zápočtový test');
+    expect(blockTopic('Podle plánu: Nové téma: Řady')).toBe('Řady');
+  });
+  it('názvy bez tématu vrátí prázdné, vlastní název nechá', () => {
+    expect(blockTopic('Po přednášce: Fyzika I')).toBe('');
+    expect(blockTopic('Nová látka')).toBe('');
+    expect(blockTopic('Anki: 40 karet')).toBe('');
+    expect(blockTopic('')).toBe('');
+    expect(blockTopic('  Integrály per partes ')).toBe('Integrály per partes');
+  });
+  it('pozná, že k bloku už je zapsaný čas', () => {
+    const b = block({ subjectId: 's', start: NOW, durationMin: 60 });
+    expect(blockHasSession([session({ subjectId: 's', start: NOW + 10 * M, end: NOW + 50 * M })], b)).toBe(true);
+    expect(blockHasSession([session({ subjectId: 'x', start: NOW, end: NOW + 60 * M })], b)).toBe(false);
+    expect(blockHasSession([session({ subjectId: 's', start: NOW + 55 * M, end: NOW + 90 * M })], b)).toBe(false);
+    expect(blockHasSession([session({ subjectId: 's', start: NOW, end: NOW + 60 * M, deletedAt: NOW })], b)).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 import { AppData, Session, Subject, Topic, alive } from '../data/schema';
 import { ctxFrom, isDue, retrievability } from '../features/topics/schedule';
 import { avgFocus } from './stats';
+import { blockTopic } from './blockTopic';
 import { lectureSubject, lecturesIn } from './timetable';
 import { DAY, HOUR, MIN, addDays, minutesOfDay, parseDayKey, startOfDay, startOfWeek, weekdayIdx } from './time';
 
@@ -203,7 +204,7 @@ export function recommend({ data, now = Date.now(), sim }: RecommendInput): Reco
     if (P >= 1 && planBlock) {
       activity = 'plan';
       title = planBlock.title ? `Podle plánu: ${planBlock.title}` : 'Blok podle plánu';
-      topic = planBlock.title;
+      topic = blockTopic(planBlock.title);
     } else if (dueTopics.length) {
       // FSRS hlásí téma k opakování → vybavování má přednost (retrieval practice je i nejlepší příprava na zkoušku)
       activity = 'review';
@@ -329,5 +330,5 @@ export function contextNote(data: AppData, now = Date.now()): string | null {
 }
 
 export function subjectName(subjects: Subject[], id: string | null) {
-  return id ? (subjects.find((s) => s.id === id)?.name ?? '?') : 'Anki';
+  return id ? (subjects.find((s) => s.id === id)?.name ?? 'Smazaný předmět') : 'Anki';
 }

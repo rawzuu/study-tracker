@@ -1,6 +1,6 @@
 import type { EChartsCoreOption } from 'echarts/core';
 import { ChartColors, SANS, SERIF, axisLabel, tooltipBase } from '../../components/Chart';
-import { addDays, dayKey, fmtDuration, startOfDay, WEEKDAYS_SHORT } from '../../lib/time';
+import { addDays, dayKey, fmtDuration, startOfDay, WEEKDAYS_SHORT, fmtDec } from '../../lib/time';
 
 /**
  * Továrny na options grafů. Každá bere data + barvy tématu a vrací option pro ECharts.
@@ -271,7 +271,7 @@ export function hourBars(c: ChartColors, minutes: number[], focus: (number | nul
           .concat(
             ps.map((p) =>
               p.seriesName === 'Soustředění'
-                ? `Soustředění: ${p.value != null ? Number(p.value).toFixed(1) + ' / 5' : '—'}`
+                ? `Soustředění: ${p.value != null ? fmtDec(Number(p.value)) + ' / 5' : '—'}`
                 : `Čas: ${fmtMin(p.value ?? 0)}`,
             ),
           )

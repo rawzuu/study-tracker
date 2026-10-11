@@ -23,6 +23,14 @@ export function SubjectSelect({
   const add = () => {
     const n = name.trim();
     if (!n) return;
+    // Předmět s tímto názvem už je → jen ho vyber, ať nevznikne dvojník.
+    const existing = alive(data.subjects).find((s) => s.name.trim().toLocaleLowerCase('cs') === n.toLocaleLowerCase('cs'));
+    if (existing) {
+      onChange(existing.id);
+      setName('');
+      setAdding(false);
+      return;
+    }
     const id = uid();
     const used = new Set(alive(data.subjects).map((s) => s.color));
     const color = SUBJECT_COLORS.find((c) => !used.has(c)) ?? SUBJECT_COLORS[data.subjects.length % SUBJECT_COLORS.length];
@@ -43,7 +51,10 @@ export function SubjectSelect({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') add();
-            if (e.key === 'Escape') setAdding(false);
+            if (e.key === 'Escape') {
+              e.stopPropagation(); // Esc zruší jen přidávání, ne celé okno
+              setAdding(false);
+            }
           }}
         />
         <button className="btn primary" onClick={add} type="button">

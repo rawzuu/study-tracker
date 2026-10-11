@@ -40,6 +40,9 @@ export function FeaturesSection() {
         <Row label="Opakování po přednášce" desc="Po hodině z rozvrhu nabídne „Co teď?“ a ranní plán krátké shrnutí ještě ten den. Jen s nahraným rozvrhem.">
           <Switch checked={s.lectureRecap !== false} onChange={(v) => setSettings({ lectureRecap: v })} label="Opakování po přednášce" />
         </Row>
+        <Row label="Hotový blok zapsat jako odučený" desc="Tlačítko Hotovo u bloku v kalendáři nabídne zapsat jeho čas, aby se započítal do přehledu. Vypnuté jen odškrtne plán.">
+          <Switch checked={s.blockDoneLogs !== false} onChange={(v) => setSettings({ blockDoneLogs: v })} label="Hotový blok zapsat jako odučený" />
+        </Row>
         <Row label="Dny volna v sérii" desc="Kolik dní bez učení za týden sérii nepřeruší.">
           <Segmented<string>
             value={String(s.streakRestDays ?? 0)}
@@ -65,7 +68,7 @@ export function FeaturesSection() {
         <Row label="Hlídat zálohu na GitHub" desc="Upozorní, když záloha selhává nebo se blíží konec platnosti tokenu.">
           <Switch checked={s.tokenWarning !== false} onChange={(v) => setSettings({ tokenWarning: v })} label="Hlídat zálohu na GitHub" />
         </Row>
-        <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+        <div className="setting-row stacked">
           <div>
             <div className="label">Zkratky</div>
             <div className="desc">

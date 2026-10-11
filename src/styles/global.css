@@ -55,7 +55,7 @@
   --line-strong: #d3ccc0;
   --text: #1d1b18;
   --text-2: #5f5a52;
-  --text-3: #767067;
+  --text-3: #6e685f; /* kontrast aspoň 4,5 : 1 i na papírovém pozadí */
   --accent: #96620f;
   --accent-hover: #7f530c;
   --accent-ink: #ffffff;
@@ -587,6 +587,20 @@ input[type='range'] {
 .btn.round {
   border-radius: 999px;
 }
+/* Dotykové displeje: malá tlačítka mají neviditelně větší plochu pro prst, přepínače jsou o kousek vyšší. */
+@media (pointer: coarse) {
+  .btn.sm {
+    position: relative;
+  }
+  .btn.sm::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+  }
+  .segmented button {
+    height: 32px;
+  }
+}
 
 .field {
   display: flex;
@@ -690,11 +704,24 @@ input[type='color'].input {
 
 .setting-row {
   display: flex;
+  flex-wrap: wrap; /* širší přepínač se na úzkém displeji přesune pod popis, místo aby byl useknutý */
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px 16px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
+}
+.setting-row > div:first-child {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.setting-row.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.setting-row.stacked > div:first-child {
+  flex: none;
 }
 .setting-row:last-child {
   border-bottom: 0;
@@ -871,6 +898,10 @@ input[type='color'].input {
 .table td.name > .row,
 .table td.name .ellipsis {
   min-width: 0;
+}
+/* Předmět v ostatních tabulkách: dlouhý název se zkrátí, aby nevytlačil ostatní sloupce. */
+.table td:not(.name) > .row {
+  max-width: 220px;
 }
 
 .callout {
@@ -1386,7 +1417,7 @@ input[type='color'].input {
 .grade-again { --g: var(--danger); }
 .grade-hard { --g: var(--warn); }
 .grade-ok { --g: var(--success); }
-.grade-easy { --g: #5eb1ef; }
+.grade-easy { --g: var(--focus); }
 @media (max-width: 520px) {
   .grades {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1411,4 +1442,25 @@ input[type='color'].input {
 }
 .menu-options[open] summary::before {
   content: '− ';
+}
+
+/* Hodnocení týdne v reflexi: na telefonu jen čísla, slovo u vybraného je v popisku. */
+.rating-sel {
+  display: none;
+}
+@media (max-width: 640px) {
+  .rating-word {
+    display: none;
+  }
+  .rating-sel {
+    display: inline;
+  }
+}
+
+/* Název předmětu jeho barvou: na světlém papíře se barva ztmaví, aby byla čitelná. */
+.subj-ink {
+  color: var(--c);
+}
+:root[data-theme='light'] .subj-ink {
+  color: color-mix(in srgb, var(--c) 50%, var(--text));
 }

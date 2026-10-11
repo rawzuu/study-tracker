@@ -3,6 +3,7 @@ import { ChevronDown, Layers, Play } from 'lucide-react';
 import { useStore } from '../../data/store';
 import { Recommendation, W, contextNote, recommend } from '../../lib/recommend';
 import { navigate } from '../../lib/router';
+import { fmtDec } from '../../lib/time';
 import { modeName } from '../timer/modes';
 import { useTimer } from '../timer/TimerContext';
 import './nextup.css';
@@ -54,7 +55,7 @@ export function NextUp({ className = '' }: { className?: string }) {
   const note = contextNote(data);
   const top = recs[0];
   const alts = recs.slice(1, 4);
-  const subjName = (id: string | null) => (id ? (data.subjects.find((s) => s.id === id)?.name ?? '?') : 'Anki');
+  const subjName = (id: string | null) => (id ? (data.subjects.find((s) => s.id === id)?.name ?? 'Smazaný předmět') : 'Anki');
   const busy = timer.state.status !== 'idle';
 
   return (
@@ -74,8 +75,9 @@ export function NextUp({ className = '' }: { className?: string }) {
           <div className="nx-main">
             <div className="nx-subject">
               <Color id={top.subjectId} />
-              <span className="label">{subjName(top.subjectId)}</span>
-              <span className="label faint">· {ACTIVITY_LABEL[top.activity]}</span>
+              <span className="label">
+                {subjName(top.subjectId)} <span className="faint">· {ACTIVITY_LABEL[top.activity]}</span>
+              </span>
             </div>
             <div className="nx-title">{top.title}</div>
             <div className="nx-reasons">
@@ -146,7 +148,7 @@ export function NextUp({ className = '' }: { className?: string }) {
                       </span>
                     </td>
                   ))}
-                  <td className="r">{r.score.toFixed(2)}</td>
+                  <td className="r">{fmtDec(r.score, 2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -170,7 +172,7 @@ export function NextUpInline() {
     <div className="nx-inline">
       <span className="grow">
         <span className="label">Doporučuji</span>{' '}
-        <b style={{ color: s?.color }}>{s?.name}</b> · {top.title} · <span className="num">{top.minutes} min</span>
+        <b className="subj-ink" style={{ ['--c' as string]: s?.color ?? 'var(--text)' }}>{s?.name}</b> · {top.title} · <span className="num">{top.minutes} min</span>
       </span>
       <button className="btn sm" onClick={() => timer.configure({ subjectId: top.subjectId!, topic: top.topic, modeId: top.modeId, planBlockId: top.planBlockId })}>
         Použít

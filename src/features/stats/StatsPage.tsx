@@ -4,7 +4,7 @@ import { useStore } from '../../data/store';
 import { Session, alive } from '../../data/schema';
 import { Chart, chartColors, useTheme } from '../../components/Chart';
 import { Empty, Segmented } from '../../components/ui';
-import { addDays, dayKey, fmtDate, fmtDuration, fmtHours, startOfDay, startOfMonth, startOfWeek } from '../../lib/time';
+import { addDays, dayKey, fmtDate, fmtDuration, fmtHours, startOfDay, startOfMonth, startOfWeek, fmtDec } from '../../lib/time';
 import { avgFocus, bestWindow, byDay, byHour, bySubject, focusByHour, hourWeekdayMatrix, inRange, totalSec } from '../../lib/stats';
 import { SubjectSelect } from '../subjects/SubjectSelect';
 import { calendarHeatmap, donut, hourBars, stackedBars, trendLine, weekHourHeatmap } from './charts';
@@ -83,7 +83,7 @@ export function StatsPage() {
     }
     const series = [...perSubj.entries()]
       .sort((a, b) => b[1].reduce((x, y) => x + y, 0) - a[1].reduce((x, y) => x + y, 0))
-      .map(([id, values]) => ({ name: subjById.get(id)?.name ?? '?', color: subjById.get(id)?.color ?? c.text3, values }));
+      .map(([id, values]) => ({ name: subjById.get(id)?.name ?? 'Smazaný předmět', color: subjById.get(id)?.color ?? c.text3, values }));
 
     return {
       trend: trendLine(c, trendLabels, trendVals, subjectId ? 0 : data.settings.dailyGoalMin),
@@ -91,7 +91,7 @@ export function StatsPage() {
       donut: donut(
         c,
         [...bySubject(filtered).entries()].map(([id, sec]) => ({
-          name: subjById.get(id)?.name ?? '?',
+          name: subjById.get(id)?.name ?? 'Smazaný předmět',
           color: subjById.get(id)?.color ?? c.text3,
           min: sec / 60,
         })),
@@ -160,7 +160,7 @@ export function StatsPage() {
             <div className="cell">
               <span className="label">Soustředění</span>
               <span className="value">
-                {focus ? focus.toFixed(1) : '—'}
+                {focus ? fmtDec(focus) : '—'}
                 {focus && <small>/5</small>}
               </span>
               <span className="foot">průměr hodnocení</span>
@@ -192,7 +192,7 @@ export function StatsPage() {
                   <div className="row between small" key={id} style={{ padding: '5px 0', borderTop: '1px solid var(--line)' }}>
                     <span className="row" style={{ gap: 7, minWidth: 0 }}>
                       <span className="dot" style={{ background: subjById.get(id)?.color }} />
-                      <span className="ellipsis">{subjById.get(id)?.name ?? '?'}</span>
+                      <span className="ellipsis">{subjById.get(id)?.name ?? 'Smazaný předmět'}</span>
                     </span>
                     <span className="num muted">
                       {fmtDuration(sec, { short: true })} <span className="faint">· {Math.round((sec / Math.max(1, total)) * 100)}%</span>
@@ -253,14 +253,14 @@ export function StatsPage() {
                           <td>
                             <span className="row" style={{ gap: 7 }}>
                               <span className="dot" style={{ background: subjById.get(id)?.color }} />
-                              {subjById.get(id)?.name ?? '?'}
+                              {subjById.get(id)?.name ?? 'Smazaný předmět'}
                             </span>
                           </td>
                           <td className="r">{fmtDuration(sec)}</td>
                           <td className="r">{Math.round((sec / Math.max(1, total)) * 100)} %</td>
                           <td className="r">{list.length}</td>
                           <td className="r">{fmtDuration(sec / list.length)}</td>
-                          <td className="r">{f ? f.toFixed(1) : '—'}</td>
+                          <td className="r">{f ? fmtDec(f) : '—'}</td>
                         </tr>
                       );
                     })}
@@ -286,8 +286,8 @@ function Insights({ filtered }: { filtered: Session[] }) {
     if (fl && fs && long.length >= 3 && short.length >= 3 && Math.abs(fl - fs) >= 0.4) {
       tips.push(
         fl > fs
-          ? `U delších bloků (45+ min) máš vyšší soustředění (${fl.toFixed(1)} vs ${fs.toFixed(1)}). Zkus Dlouhé Pomodoro nebo Flowtime.`
-          : `U kratších bloků máš vyšší soustředění (${fs.toFixed(1)} vs ${fl.toFixed(1)}). Klasické Pomodoro ti asi sedí víc.`,
+          ? `U delších bloků (45+ min) máš vyšší soustředění (${fmtDec(fl)} vs ${fmtDec(fs)}). Zkus Dlouhé Pomodoro nebo Flowtime.`
+          : `U kratších bloků máš vyšší soustředění (${fmtDec(fs)} vs ${fmtDec(fl)}). Klasické Pomodoro ti asi sedí víc.`,
       );
     }
     const late = filtered.filter((s) => new Date(s.start).getHours() >= 22);

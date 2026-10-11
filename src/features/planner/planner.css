@@ -38,16 +38,17 @@
   font-weight: 500;
   color: var(--text-3);
 }
+/* Číslo dne: proporcionální číslice a bez prostrkání, jinak „11“ nebo „19“ opticky ujíždí doprava; 1px vpravo dorovná optický střed. */
 .week-day-head .dn {
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: proportional-nums;
   font-size: 18px;
   font-weight: 450;
   width: 32px;
   height: 32px;
+  padding-right: 1px;
   display: grid;
   place-items: center;
   border-radius: 7px;
-  letter-spacing: -0.03em;
 }
 .week-day-head.today .wd {
   color: var(--text);
@@ -192,6 +193,9 @@
 }
 .cal-plan b {
   color: var(--c);
+}
+:root[data-theme='light'] .cal-plan b {
+  color: color-mix(in srgb, var(--c) 50%, var(--text));
 }
 .cal-plan span {
   color: var(--text-2);

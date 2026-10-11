@@ -32,7 +32,7 @@ export interface TrashItem {
 /** Smazané položky za posledních 30 dní, nejnovější první. Systémová mazání (Anki, přegenerované bloky zkoušek) vynechá. */
 export function trashItems(data: AppData, now = Date.now()): TrashItem[] {
   const since = now - TRASH_DAYS * DAY;
-  const subj = (id: string) => data.subjects.find((s) => s.id === id)?.name ?? '?';
+  const subj = (id: string) => data.subjects.find((s) => s.id === id)?.name ?? 'Smazaný předmět';
   const out: TrashItem[] = [];
   const add = (key: TrashKey, e: Entity, title: string, detail: string) => {
     if (e.deletedAt && e.deletedAt >= since) out.push({ key, id: e.id, deletedAt: e.deletedAt, title, detail });

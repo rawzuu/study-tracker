@@ -4,7 +4,7 @@ import { useStore } from '../../data/store';
 import { alive } from '../../data/schema';
 import { Chart, chartColors, useTheme } from '../../components/Chart';
 import { Empty } from '../../components/ui';
-import { addDays, dayKey, fmtDuration, fmtHours, WEEKDAYS_SHORT } from '../../lib/time';
+import { addDays, dayKey, fmtDuration, fmtHours, WEEKDAYS_SHORT, fmtDec } from '../../lib/time';
 import { highlights, monthRange, pct, periodStats } from '../../lib/report';
 import { compareBars, donut, highlightBars, hourBars } from './charts';
 import { focusByHour, inRange } from '../../lib/stats';
@@ -70,7 +70,7 @@ export function ReportPage() {
     }
     const ids = new Set([...cur.perSubject.keys(), ...prev.perSubject.keys()]);
     const compareItems = [...ids].map((id) => ({
-      name: subjById.get(id)?.name ?? '?',
+      name: subjById.get(id)?.name ?? 'Smazaný předmět',
       color: subjById.get(id)?.color ?? c.text3,
       cur: (cur.perSubject.get(id) ?? 0) / 60,
       prev: (prev.perSubject.get(id) ?? 0) / 60,
@@ -82,7 +82,7 @@ export function ReportPage() {
       compare: compareBars(c, compareItems, MONTHS[prevRange.from ? new Date(prevRange.from).getMonth() : 0], MONTHS[m]),
       donut: donut(
         c,
-        [...cur.perSubject.entries()].map(([id, sec]) => ({ name: subjById.get(id)?.name ?? '?', color: subjById.get(id)?.color ?? c.text3, min: sec / 60 })),
+        [...cur.perSubject.entries()].map(([id, sec]) => ({ name: subjById.get(id)?.name ?? 'Smazaný předmět', color: subjById.get(id)?.color ?? c.text3, min: sec / 60 })),
       ),
     };
   }, [cur, prev, y, m, from, subjById, sessions, to, prevRange.from, theme]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -152,10 +152,10 @@ export function ReportPage() {
             <div className="cell">
               <span className="label">Soustředění</span>
               <span className="value">
-                {cur.focus ? cur.focus.toFixed(1) : '—'}
+                {cur.focus ? fmtDec(cur.focus) : '—'}
                 <small>/5</small>
               </span>
-              <span className="foot">{prev.focus && cur.focus ? `minule ${prev.focus.toFixed(1)}` : 'průměr hodnocení'}</span>
+              <span className="foot">{prev.focus && cur.focus ? `minule ${fmtDec(prev.focus)}` : 'průměr hodnocení'}</span>
             </div>
             <div className="cell">
               <span className="label">Nejdelší série</span>
@@ -222,7 +222,7 @@ export function ReportPage() {
                       <td>{p.label}</td>
                       <td className="r">{fmtDuration(p.min * 60, { short: true })}</td>
                       <td className="r">{Math.round((p.min / Math.max(1, cur.total / 60)) * 100)} %</td>
-                      <td className="r">{p.focus ? p.focus.toFixed(1) : '—'}</td>
+                      <td className="r">{p.focus ? fmtDec(p.focus) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -251,7 +251,7 @@ export function ReportPage() {
                           <td className="name">
                             <span className="row" style={{ gap: 7 }}>
                               <span className="dot" style={{ background: subjById.get(r.id)?.color }} />
-                              <span className="ellipsis">{subjById.get(r.id)?.name ?? '?'}</span>
+                              <span className="ellipsis">{subjById.get(r.id)?.name ?? 'Smazaný předmět'}</span>
                             </span>
                           </td>
                           <td className="r">{fmtDuration(r.cur, { short: true })}</td>
@@ -282,8 +282,8 @@ export function ReportPage() {
             </div>
             <div className="cell">
               <span className="label">Vyrušení za hodinu</span>
-              <span className="value">{cur.interruptionsPerHour.toFixed(1)}</span>
-              <span className="foot">{prev.sessions ? `minule ${prev.interruptionsPerHour.toFixed(1)}` : '—'}</span>
+              <span className="value">{fmtDec(cur.interruptionsPerHour)}</span>
+              <span className="foot">{prev.sessions ? `minule ${fmtDec(prev.interruptionsPerHour)}` : '—'}</span>
             </div>
             <div className="cell">
               <span className="label">Plnění plánu</span>

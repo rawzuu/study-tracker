@@ -143,4 +143,12 @@
 .grade-seg .g-again:hover { color: var(--danger); }
 .grade-seg .g-hard:hover { color: var(--warn); }
 .grade-seg .g-ok:hover { color: var(--success); }
-.grade-seg .g-easy:hover { color: #5eb1ef; }
+.grade-seg .g-easy:hover { color: var(--focus); }
+
+/* Na telefonu se údaje o tématu zalomí, místo aby se poslední potichu usekly. */
+@media (max-width: 640px) {
+  .topic-meta {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+}

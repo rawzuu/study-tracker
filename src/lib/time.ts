@@ -72,6 +72,11 @@ export function fmtDuration(sec: number, opts: { short?: boolean } = {}): string
   return m ? `${h} h ${m} min` : `${h} h`;
 }
 
+/** Desetinné číslo po česku s pevným počtem míst: "3,6" */
+export function fmtDec(n: number, digits = 1): string {
+  return n.toLocaleString('cs-CZ', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
 /** Hodiny s jedním desetinným místem: "3,5 h" */
 export function fmtHours(sec: number): string {
   return `${(sec / 3600).toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} h`;

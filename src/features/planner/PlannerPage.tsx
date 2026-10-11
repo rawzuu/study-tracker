@@ -43,6 +43,18 @@ interface CalItem {
   block?: PlanBlock;
   session?: Session;
   lecture?: Lecture;
+  span?: [number, number]; // skutečný začátek a konec, když je položka rozdělená přes půlnoc
+}
+
+/** Položka přes půlnoc se kreslí ve dvou dnech – jinak by přetekla pod mřížku a ráno by chyběla. */
+function splitAtMidnight(it: CalItem): CalItem[] {
+  const mid = addDays(startOfDay(it.start), 1);
+  if (it.end <= mid) return [it];
+  const span: [number, number] = [it.start, it.end];
+  return [
+    { ...it, end: mid, span },
+    { ...it, id: `${it.id}~2`, start: mid, span },
+  ];
 }
 
 function shiftMonth(t: number, n: number): number {
@@ -134,7 +146,7 @@ export function PlannerPage() {
         out.push({ kind: 'live', id: 'live', subjectId: timer.state.subjectId, start: ws, end: Math.max(now, ws + 10 * MIN), title: timer.state.topic });
       }
     }
-    return out;
+    return out.flatMap(splitAtMidnight);
   }, [blocks, lectures, weekSessions, layer, liveRunning, timer.state.workStartedAt, timer.state.subjectId, timer.state.topic, now, weekStart, weekEnd]);
 
   const hourFrom = Math.min(DEFAULT_HOUR_FROM, ...items.map((it) => new Date(it.start).getHours()));
@@ -202,7 +214,10 @@ export function PlannerPage() {
       <div className="page-head">
         <div>
           <h1>Kalendář</h1>
-          <p>Plná barva = odučeno (z časovače se zapisuje samo), obrys = plán. Klikni do prázdna pro nový záznam, plán přesouvej tažením.</p>
+          <p>
+            Plná barva = odučený čas, obrys = plán. Čas se zapíše z časovače{data.settings.blockDoneLogs !== false ? ', nebo tlačítkem Hotovo u bloku' : ''}. Klikni do prázdna pro
+            nový záznam, plán přesouvej tažením.
+          </p>
         </div>
         <div className="row wrap">
           <button className="btn" onClick={() => setDayPlan(true)}>
@@ -351,7 +366,7 @@ export function PlannerPage() {
                               ['--c' as string]: s?.color ?? '#888',
                               transform: dragging ? `translate(${drag!.dayDelta * colWidth()}px, ${(drag!.minDelta / 60) * HOUR_H}px)` : undefined,
                             };
-                            const timeLabel = `${fmtTime(it.start)}–${fmtTime(it.end)}`;
+                            const timeLabel = `${fmtTime(it.span?.[0] ?? it.start)}–${fmtTime(it.span?.[1] ?? it.end)}`;
                             if (it.kind === 'lecture') {
                               const l = it.lecture!;
                               return (
@@ -379,7 +394,7 @@ export function PlannerPage() {
                                   title={`Plán: ${s?.name ?? ''} ${it.title} ${timeLabel}`}
                                 >
                                   <b>
-                                    {b.done && <Check size={11} strokeWidth={3} />} {s?.name ?? '?'}
+                                    {b.done && <Check size={11} strokeWidth={3} />} {s?.name ?? 'Smazaný předmět'}
                                   </b>
                                   {h >= 34 && <span>{it.title || 'plán'}</span>}
                                   {h >= 50 && (
@@ -398,7 +413,7 @@ export function PlannerPage() {
                                 onClick={() => it.session && setModal({ kind: 'session', session: it.session })}
                                 title={`${it.kind === 'live' ? 'Právě probíhá' : 'Odučeno'}: ${s?.name ?? ''}${it.title ? ' – ' + it.title : ''} · ${timeLabel}${it.session ? ' · ' + fmtDuration(it.session.durationSec) : ''}`}
                               >
-                                <b>{s?.name ?? '?'}</b>
+                                <b>{s?.name ?? 'Smazaný předmět'}</b>
                                 {h >= 34 && <span>{it.kind === 'live' ? 'právě teď' : it.title || fmtDuration(it.session!.durationSec, { short: true })}</span>}
                                 {h >= 50 && <span className="t">{timeLabel}</span>}
                               </div>
@@ -430,7 +445,7 @@ export function PlannerPage() {
                 legend.map(([id, sec]) => (
                   <span key={id} className="legend-subj">
                     <i style={{ background: subj.get(id)?.color }} />
-                    {subj.get(id)?.name ?? '?'} <span className="num faint">{fmtDuration(sec, { short: true })}</span>
+                    {subj.get(id)?.name ?? 'Smazaný předmět'} <span className="num faint">{fmtDuration(sec, { short: true })}</span>
                   </span>
                 ))
               )}

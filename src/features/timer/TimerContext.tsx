@@ -70,8 +70,8 @@ interface TimerValue {
   start: () => void;
   pause: () => void;
   resume: () => void;
-  finishWork: () => void; // ukončí blok práce a přejde na pauzu
-  stop: () => void; // uloží a ukončí úplně
+  finishWork: () => boolean; // ukončí blok práce a přejde na pauzu; true = blok byl moc krátký a neuložil se
+  stop: () => boolean; // uloží a ukončí úplně; true = blok byl moc krátký a neuložil se
   skip: () => void; // přeskočí pauzu
   discard: () => void; // zahodí aktuální blok bez uložení
   addInterruption: () => void;
@@ -305,13 +305,19 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     setState((p) => (p.status === 'paused' ? { ...p, status: 'running', segmentStart: t } : p));
   }, []);
 
+  /** Uloží se blok? Kratší než nastavené minimum se zahodí – ovládání pak dá vědět. */
+  const tooShort = (s: TimerState, t: number) => !!s.subjectId && Math.min(elapsedOf(s, t), s.phaseDurationMs ?? Infinity) / 1000 < ref.current.settings.minSessionSec;
+
   const finishWork = useCallback(() => {
     const s = ref.current.state;
-    if (s.phase !== 'work' || s.status === 'idle' || s.status === 'ready') return;
+    if (s.phase !== 'work' || s.status === 'idle' || s.status === 'ready') return false;
     const key = `${s.phase}:${s.segmentStart}:${s.accumulated}`;
-    if (completed.current === key) return;
+    if (completed.current === key) return false;
     completed.current = key;
-    endWork(Date.now(), false);
+    const t = Date.now();
+    const short = tooShort(s, t);
+    endWork(t, false);
+    return short;
   }, [endWork]);
 
   const reset = (p: TimerState): TimerState => ({
@@ -330,10 +336,13 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   const stop = useCallback(() => {
     const s = ref.current.state;
     const t = Date.now();
+    let short = false;
     if (s.phase === 'work' && (s.status === 'running' || s.status === 'paused')) {
+      short = tooShort(s, t);
       saveSession(s, t, Math.min(elapsedOf(s, t), s.phaseDurationMs ?? Infinity));
     }
     setState(reset);
+    return short;
   }, [saveSession]);
 
   const discard = useCallback(() => setState(reset), []);

@@ -4,7 +4,7 @@ import { useStore } from '../../data/store';
 import { Topic, alive } from '../../data/schema';
 import { Empty, Modal, useToast } from '../../components/ui';
 import { useRemoveWithUndo } from '../../components/undo';
-import { DAY, addDays, fmtDate, plural, startOfDay } from '../../lib/time';
+import { DAY, addDays, fmtDate, plural, startOfDay, fmtDec } from '../../lib/time';
 import { navigate } from '../../lib/router';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
 import { useTimer } from '../timer/TimerContext';
@@ -44,7 +44,7 @@ export function MemoryMeter({ t }: { t: Topic }) {
   const cls = r >= ctx.retention - 0.005 ? 'ok' : r >= 0.75 ? 'mid' : 'low';
   const s = stability(t);
   return (
-    <span className={`mem mem-${cls}`} title={`Pravděpodobnost, že si to teď vybavíš: ${Math.round(r * 100)} %. Stabilita ${s?.toFixed(1)} dne.`}>
+    <span className={`mem mem-${cls}`} title={`Pravděpodobnost, že si to teď vybavíš: ${Math.round(r * 100)} %. Stabilita ${s != null ? fmtDec(s) : '—'} dne.`}>
       <span className="mem-bar">
         <i style={{ width: `${Math.round(r * 100)}%` }} />
       </span>
@@ -80,8 +80,8 @@ function TopicRow({ t, onEdit }: { t: Topic; onEdit: () => void }) {
         <div className="small faint topic-meta">
           <SubjectTag id={t.subjectId} />
           {t.lastStudiedAt && <span className="num">· naposled {fmtDate(t.lastStudiedAt)}</span>}
-          {s != null && <span className="num" title="Stabilita: za kolik dní klesne vybavitelnost na 90 %">· S {s < 10 ? s.toFixed(1) : Math.round(s)} d</span>}
-          {d != null && <span className="num" title="Obtížnost 1–10">· D {d.toFixed(1)}</span>}
+          {s != null && <span className="num" title="Stabilita: za kolik dní klesne vybavitelnost na 90 %">· S {s < 10 ? fmtDec(s) : Math.round(s)} d</span>}
+          {d != null && <span className="num" title="Obtížnost 1–10">· D {fmtDec(d)}</span>}
           <span className="num">· {t.reviews}×</span>
         </div>
       </div>

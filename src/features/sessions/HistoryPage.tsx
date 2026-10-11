@@ -1,29 +1,49 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, FileSpreadsheet, Pencil, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, Check, FileSpreadsheet, Pencil, Plus, Trash2 } from 'lucide-react';
 import { sessionsToCsv } from '../../lib/csv';
 import { downloadFile } from '../planner/ics';
 import { applyStudy, ctxFrom, findTopic, newTopic } from '../topics/schedule';
 import { matchPlanBlocks } from '../planner/match';
 import { useStore } from '../../data/store';
-import { Session, alive, uid } from '../../data/schema';
+import { PlanBlock, Session, alive, uid } from '../../data/schema';
 import { Empty, Field, Modal } from '../../components/ui';
 import { useRemoveWithUndo } from '../../components/undo';
 import { capitalize, dayKey, fmtDayLabel, fmtDuration, fmtTime, fromLocalInput, toLocalInput } from '../../lib/time';
 import { totalSec } from '../../lib/stats';
+import { blockTopic } from '../../lib/blockTopic';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
 import { modeName } from '../timer/modes';
 import { FOCUS_LABELS } from '../timer/FocusRating';
 
-export function SessionModal({ session, initialStart, onClose }: { session?: Session; initialStart?: number; onClose: () => void }) {
+/** Předvyplnění z naplánovaného bloku: kdy začal a kolik z něj mohlo do teď proběhnout. */
+function fromBlock(b: PlanBlock, now = Date.now()): { start: number; minutes: number } {
+  if (b.start >= now) return { start: now - b.durationMin * 60_000, minutes: b.durationMin }; // hotovo dřív, než blok začal
+  return { start: b.start, minutes: Math.max(1, Math.min(b.durationMin, Math.round((now - b.start) / 60_000))) };
+}
+
+export function SessionModal({
+  session,
+  initialStart,
+  planBlock,
+  onClose,
+}: {
+  session?: Session;
+  initialStart?: number;
+  /** Zápis z bloku plánu („Hotovo“): předvyplní se z něj a po uložení se blok odškrtne. */
+  planBlock?: PlanBlock;
+  onClose: () => void;
+}) {
   const { upsert, upsertMany } = useStore();
   const removeWithUndo = useRemoveWithUndo();
   const defEnd = session?.end ?? Date.now();
-  const [subjectId, setSubjectId] = useState(session?.subjectId ?? '');
-  const [topic, setTopic] = useState(session?.topic ?? '');
-  const [start, setStart] = useState(toLocalInput(session?.start ?? initialStart ?? defEnd - 50 * 60_000));
-  const [minutes, setMinutes] = useState(session ? Math.round(session.durationSec / 60) : 50);
+  const pre = planBlock && !session ? fromBlock(planBlock) : null;
+  const [subjectId, setSubjectId] = useState(session?.subjectId ?? planBlock?.subjectId ?? '');
+  const [topic, setTopic] = useState(session?.topic ?? (planBlock ? blockTopic(planBlock.title) : ''));
+  const [start, setStart] = useState(toLocalInput(session?.start ?? pre?.start ?? initialStart ?? defEnd - 50 * 60_000));
+  const [minutes, setMinutes] = useState(session ? Math.round(session.durationSec / 60) : (pre?.minutes ?? 50));
   const [focus, setFocus] = useState<number>(session?.focus ?? 0);
-  const [note, setNote] = useState(session?.note ?? '');
+  // Vygenerovaný název bloku („Po přednášce: …“) se nehodí jako téma – zůstane aspoň v poznámce.
+  const [note, setNote] = useState(session?.note ?? (planBlock && blockTopic(planBlock.title) !== planBlock.title.trim() ? planBlock.title : ''));
 
   const { data } = useStore();
   const save = () => {
@@ -52,20 +72,32 @@ export function SessionModal({ session, initialStart, onClose }: { session?: Ses
       note: note.trim(),
       topicId,
     } as Session);
-    // Odpovídající naplánované bloky se automaticky odškrtnou.
+    // Odpovídající naplánované bloky se automaticky odškrtnou (a blok, ze kterého se zapisuje, vždy).
     if (!session) {
-      const matched = matchPlanBlocks(data.planBlocks, subjectId, s, end);
-      if (matched.length) upsertMany('planBlocks', matched.map((b) => ({ ...b, done: true })));
+      const matched = matchPlanBlocks(data.planBlocks, subjectId, s, end).filter((b) => b.id !== planBlock?.id);
+      const own = planBlock ? data.planBlocks.filter((b) => b.id === planBlock.id && !b.done) : [];
+      if (matched.length || own.length) upsertMany('planBlocks', [...own, ...matched].map((b) => ({ ...b, done: true })));
     }
     onClose();
   };
 
   return (
     <Modal
-      title={session ? 'Upravit sezení' : 'Zapsat sezení ručně'}
+      title={session ? 'Upravit sezení' : planBlock ? 'Zapsat odučený blok' : 'Zapsat sezení ručně'}
       onClose={onClose}
       footer={
         <>
+          {planBlock && !session && (
+            <button
+              className="btn left"
+              onClick={() => {
+                upsert('planBlocks', { ...planBlock, done: true });
+                onClose();
+              }}
+            >
+              <Check size={15} /> Jen odškrtnout
+            </button>
+          )}
           {session && (
             <button
               className="btn danger left"
@@ -86,6 +118,7 @@ export function SessionModal({ session, initialStart, onClose }: { session?: Ses
       }
     >
       <div className="stack">
+        {planBlock && !session && <p className="muted small" style={{ margin: 0 }}>Čas se započítá do přehledu a statistik. Pokud učení trvalo jinak dlouho, uprav minuty.</p>}
         <Field label="Předmět">
           <SubjectSelect value={subjectId} onChange={setSubjectId} />
         </Field>

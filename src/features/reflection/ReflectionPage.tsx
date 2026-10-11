@@ -4,7 +4,7 @@ import { useStore } from '../../data/store';
 import { Reflection, alive, uid } from '../../data/schema';
 import { Chart, chartColors, useTheme } from '../../components/Chart';
 import { Bar, useToast } from '../../components/ui';
-import { addDays, dayKey, fmtDate, fmtDuration, parseDayKey, startOfWeek, WEEKDAYS_SHORT } from '../../lib/time';
+import { addDays, dayKey, fmtDate, fmtDuration, parseDayKey, startOfWeek, WEEKDAYS_SHORT, fmtDec } from '../../lib/time';
 import { pct, periodStats } from '../../lib/report';
 import { navigate } from '../../lib/router';
 import { highlightBars } from '../stats/charts';
@@ -120,8 +120,8 @@ export function ReflectionPage() {
         </div>
         <div className="cell">
           <span className="label">Soustředění</span>
-          <span className="value">{cur.focus ? cur.focus.toFixed(1) : '—'}</span>
-          <span className="foot">{prev.focus ? `předtím ${prev.focus.toFixed(1)}` : '—'}</span>
+          <span className="value">{cur.focus ? fmtDec(cur.focus) : '—'}</span>
+          <span className="foot">{prev.focus ? `předtím ${fmtDec(prev.focus)}` : '—'}</span>
         </div>
         <div className="cell">
           <span className="label">Plnění plánu</span>
@@ -138,11 +138,14 @@ export function ReflectionPage() {
           </div>
           <div className="stack" style={{ gap: 16 }}>
             <div className="stack tight">
-              <span className="label">Celkové hodnocení týdne</span>
+              <span className="label">
+                Celkové hodnocení týdne<span className="rating-sel">{rating ? ` · ${RATINGS[rating]}` : ''}</span>
+              </span>
               <div className="segmented" style={{ alignSelf: 'flex-start' }}>
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} className={rating === n ? 'on' : ''} onClick={() => setRating(n)}>
-                    {n} · {RATINGS[n]}
+                  <button key={n} className={rating === n ? 'on' : ''} onClick={() => setRating(n)} aria-label={`${n} · ${RATINGS[n]}`}>
+                    {n}
+                    <span className="rating-word"> · {RATINGS[n]}</span>
                   </button>
                 ))}
               </div>
