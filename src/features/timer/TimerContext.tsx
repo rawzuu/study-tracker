@@ -61,13 +61,31 @@ function elapsedOf(s: TimerState, now: number): number {
   return s.accumulated + (s.status === 'running' && s.segmentStart ? now - s.segmentStart : 0);
 }
 
+type ConfigPatch = Partial<Pick<TimerState, 'modeId' | 'subjectId' | 'topic' | 'planBlockId' | 'extraTopics'>>;
+
+/** Nastavení časovače (předmět, téma, režim…) – sdílené pro ruční úpravu i spuštění z doporučení. */
+function withConfig(p: TimerState, patch: ConfigPatch): TimerState {
+  const next = { ...p, ...patch };
+  if (patch.modeId && patch.modeId !== p.modeId && p.status === 'idle') next.round = 0;
+  // Další témata patří jen k nastavení, se kterým přišla – ruční změna předmětu nebo tématu je zahodí.
+  if (!('extraTopics' in patch) && (patch.subjectId !== undefined || patch.topic !== undefined)) next.extraTopics = undefined;
+  return next;
+}
+
+/** Jde teď začít něco nového? Ano, když nic neběží – i mezi bloky („Další blok“), kdy je vše hotové už uložené. */
+export function canSwitch(s: TimerState): boolean {
+  return s.status === 'idle' || s.status === 'ready';
+}
+
 interface TimerValue {
   state: TimerState;
   mode: TimerMode;
   elapsedMs: number;
   remainingMs: number | null;
   progress: number; // 0–1 (u počítání nahoru 0)
-  configure: (patch: Partial<Pick<TimerState, 'modeId' | 'subjectId' | 'topic' | 'planBlockId' | 'extraTopics'>>) => void;
+  configure: (patch: ConfigPatch) => void;
+  /** Připraví nový blok z doporučení nebo plánu; mezi bloky nejdřív ukončí dosavadní sérii. Běžící blok nepřeruší. */
+  setup: (patch: ConfigPatch) => void;
   start: () => void;
   pause: () => void;
   resume: () => void;
@@ -279,15 +297,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   }, [state.status, state.phase, remainingMs, elapsedMs]);
 
   // ---------- akce ----------
-  const configure = useCallback<TimerValue['configure']>((patch) => {
-    setState((p) => {
-      const next = { ...p, ...patch };
-      if (patch.modeId && patch.modeId !== p.modeId && p.status === 'idle') next.round = 0;
-      // Další témata patří jen k nastavení, se kterým přišla – ruční změna předmětu nebo tématu je zahodí.
-      if (!('extraTopics' in patch) && (patch.subjectId !== undefined || patch.topic !== undefined)) next.extraTopics = undefined;
-      return next;
-    });
-  }, []);
+  const configure = useCallback<TimerValue['configure']>((patch) => setState((p) => withConfig(p, patch)), []);
 
   const start = useCallback(() => {
     unlockAudio();
@@ -351,6 +361,10 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     extraTopics: undefined,
   });
 
+  const setup = useCallback<TimerValue['setup']>((patch) => {
+    setState((p) => (canSwitch(p) ? withConfig(p.status === 'ready' ? reset(p) : p, patch) : p));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const stop = useCallback(() => {
     const s = ref.current.state;
     const t = Date.now();
@@ -379,6 +393,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     remainingMs,
     progress,
     configure,
+    setup,
     start,
     pause,
     resume,

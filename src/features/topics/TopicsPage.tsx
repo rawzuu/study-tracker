@@ -7,7 +7,7 @@ import { useRemoveWithUndo } from '../../components/undo';
 import { DAY, addDays, fmtDate, plural, startOfDay, fmtDec } from '../../lib/time';
 import { navigate } from '../../lib/router';
 import { SubjectSelect, SubjectTag } from '../subjects/SubjectSelect';
-import { useTimer } from '../timer/TimerContext';
+import { canSwitch, useTimer } from '../timer/TimerContext';
 import {
   RATINGS,
   RATING_HINT,
@@ -89,12 +89,12 @@ function TopicRow({ t, onEdit }: { t: Topic; onEdit: () => void }) {
       <span className={`chip ${due.cls}`}>{due.text}</span>
       {!t.mastered && (
         <div className="row topic-actions" style={{ gap: 4 }}>
-          {timer.state.status === 'idle' && (
+          {canSwitch(timer.state) && (
             <button
               className="btn icon sm"
               title="Opakovat s časovačem"
               onClick={() => {
-                timer.configure({ subjectId: t.subjectId, topic: t.name });
+                timer.setup({ subjectId: t.subjectId, topic: t.name });
                 navigate('casovac');
               }}
             >

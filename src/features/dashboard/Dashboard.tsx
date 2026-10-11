@@ -11,7 +11,7 @@ import { navigate } from '../../lib/router';
 import { blockTopics } from '../../lib/blockTopic';
 import { calendarHeatmap } from '../stats/charts';
 import { SubjectTag } from '../subjects/SubjectSelect';
-import { useTimer } from '../timer/TimerContext';
+import { canSwitch, useTimer } from '../timer/TimerContext';
 import { TimerControls } from '../timer/TimerPage';
 import { isDue, overdueDays } from '../topics/schedule';
 import { StageMeter } from '../topics/TopicsPage';
@@ -231,7 +231,7 @@ export function Dashboard() {
   const showAnki = data.settings.anki.enabled || data.anki.some((a) => a.id === 'snapshot' && !a.deletedAt);
 
   const startTopic = (subjectId: string, topic: string, planBlockId?: string, extraTopics: string[] = []) => {
-    timer.configure({ subjectId, topic, planBlockId, extraTopics });
+    timer.setup({ subjectId, topic, planBlockId, extraTopics });
     navigate('casovac');
   };
 
@@ -407,7 +407,7 @@ export function Dashboard() {
                   {b.done ? (
                     <Check size={14} color="var(--success)" aria-label="Hotovo" />
                   ) : (
-                    timer.state.status === 'idle' && (
+                    canSwitch(timer.state) && (
                       <button className="btn icon sm" title="Spustit časovač" aria-label="Spustit časovač" onClick={() => {
                           const [topic = '', ...extra] = blockTopics(b.title);
                           startTopic(b.subjectId, topic, b.id, extra);
@@ -447,7 +447,7 @@ export function Dashboard() {
                       </div>
                     </div>
                     <StageMeter t={t} />
-                    {timer.state.status === 'idle' && (
+                    {canSwitch(timer.state) && (
                       <button className="btn icon sm" title="Opakovat s časovačem" aria-label="Opakovat s časovačem" onClick={() => startTopic(t.subjectId, t.name)}>
                         <Play size={11} fill="currentColor" />
                       </button>

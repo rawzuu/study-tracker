@@ -8,7 +8,7 @@ import { addDays, dayKey, fmtDayLabel, parseDayKey, startOfDay, toTimeInput } fr
 import { navigate } from '../../lib/router';
 import { blockTopics } from '../../lib/blockTopic';
 import { SubjectSelect } from '../subjects/SubjectSelect';
-import { useTimer } from '../timer/TimerContext';
+import { canSwitch, useTimer } from '../timer/TimerContext';
 import { SessionModal } from '../sessions/HistoryPage';
 import { buildIcs, downloadFile } from './ics';
 import { blockHasSession } from './match';
@@ -81,12 +81,12 @@ export function BlockModal({ block, initialStart, onClose }: { block?: PlanBlock
               <Trash2 size={15} /> Smazat
             </button>
           )}
-          {block && !block.done && timer.state.status === 'idle' && (
+          {block && !block.done && canSwitch(timer.state) && (
             <button
               className="btn"
               onClick={() => {
                 const [topic = '', ...extraTopics] = blockTopics(block.title);
-                timer.configure({ subjectId: block.subjectId, topic, extraTopics, planBlockId: block.id });
+                timer.setup({ subjectId: block.subjectId, topic, extraTopics, planBlockId: block.id });
                 navigate('casovac');
                 onClose();
               }}

@@ -5,7 +5,7 @@ import { Recommendation, W, contextNote, recommend } from '../../lib/recommend';
 import { navigate } from '../../lib/router';
 import { fmtDec } from '../../lib/time';
 import { modeName } from '../timer/modes';
-import { useTimer } from '../timer/TimerContext';
+import { canSwitch, useTimer } from '../timer/TimerContext';
 import './nextup.css';
 
 const ACTIVITY_LABEL: Record<Recommendation['activity'], string> = {
@@ -36,7 +36,7 @@ export function useRecommendations(): Recommendation[] {
 
 export function startRecommendation(r: Recommendation, timer: ReturnType<typeof useTimer>) {
   if (!r.subjectId) return;
-  timer.configure({ subjectId: r.subjectId, topic: r.topic, extraTopics: r.extraTopics, modeId: r.modeId, planBlockId: r.planBlockId });
+  timer.setup({ subjectId: r.subjectId, topic: r.topic, extraTopics: r.extraTopics, modeId: r.modeId, planBlockId: r.planBlockId });
   navigate('casovac');
 }
 
@@ -56,7 +56,8 @@ export function NextUp({ className = '' }: { className?: string }) {
   const top = recs[0];
   const alts = recs.slice(1, 4);
   const subjName = (id: string | null) => (id ? (data.subjects.find((s) => s.id === id)?.name ?? 'Smazaný předmět') : 'Anki');
-  const busy = timer.state.status !== 'idle';
+  // Blokuje jen běžící nebo pozastavený blok; mezi bloky („Další blok“) jde rovnou začít něco jiného.
+  const busy = !canSwitch(timer.state);
 
   return (
     <div className={`card nextup ${className}`}>
@@ -92,18 +93,26 @@ export function NextUp({ className = '' }: { className?: string }) {
                   <Layers size={14} /> Otevři Anki – čas se sem započítá sám.
                 </span>
               ) : (
-                <button className="btn primary" disabled={busy} onClick={() => startRecommendation(top, timer)}>
-                  <Play size={13} fill="currentColor" /> Začít · {top.minutes} min
-                </button>
+                busy ? (
+                  <a className="btn" href="#/casovac">
+                    Časovač běží – otevřít
+                  </a>
+                ) : (
+                  <button className="btn primary" onClick={() => startRecommendation(top, timer)}>
+                    <Play size={13} fill="currentColor" /> Začít · {top.minutes} min
+                  </button>
+                )
               )}
-              {top.activity !== 'anki' && <span className="small faint">{modeName(top.modeId, data.presets)}</span>}
+              {top.activity !== 'anki' && (
+                <span className="small faint">{busy ? 'Doporučení spustíš po ukončení bloku.' : modeName(top.modeId, data.presets)}</span>
+              )}
             </div>
           </div>
           {alts.length > 0 && (
             <div className="nx-alts">
               <span className="label">Nebo</span>
               {alts.map((r) => (
-                <button key={r.key} className="nx-alt" disabled={busy || r.activity === 'anki'} onClick={() => startRecommendation(r, timer)} title={r.reasons.join(' · ')}>
+                <button key={r.key} className="nx-alt" disabled={busy || r.activity === 'anki'} onClick={() => startRecommendation(r, timer)} title={busy ? 'Časovač běží – nejdřív ukonči blok' : r.reasons.join(' · ')}>
                   <Color id={r.subjectId} />
                   <span className="grow ellipsis">
                     <b>{subjName(r.subjectId)}</b> <span className="faint">{r.title}</span>
@@ -166,7 +175,7 @@ export function NextUpInline() {
   const timer = useTimer();
   const recs = useRecommendations().filter((r) => r.subjectId);
   const top = recs[0];
-  if (!top || timer.state.status !== 'idle') return null;
+  if (!top || !canSwitch(timer.state)) return null;
   const s = data.subjects.find((x) => x.id === top.subjectId);
   return (
     <div className="nx-inline">
@@ -174,7 +183,7 @@ export function NextUpInline() {
         <span className="label">Doporučuji</span>{' '}
         <b className="subj-ink" style={{ ['--c' as string]: s?.color ?? 'var(--text)' }}>{s?.name}</b> · {top.title} · <span className="num">{top.minutes} min</span>
       </span>
-      <button className="btn sm" onClick={() => timer.configure({ subjectId: top.subjectId!, topic: top.topic, extraTopics: top.extraTopics, modeId: top.modeId, planBlockId: top.planBlockId })}>
+      <button className="btn sm" onClick={() => timer.setup({ subjectId: top.subjectId!, topic: top.topic, extraTopics: top.extraTopics, modeId: top.modeId, planBlockId: top.planBlockId })}>
         Použít
       </button>
     </div>

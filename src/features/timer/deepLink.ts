@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useStore } from '../../data/store';
 import { alive } from '../../data/schema';
 import { norm } from '../../lib/timetable';
-import { useTimer } from './TimerContext';
+import { canSwitch, useTimer } from './TimerContext';
 
 /**
  * Odkaz, který rovnou spustí časovač – pro zkratku na ikoně aplikace, Siri nebo Zkratky:
@@ -25,13 +25,13 @@ export function useTimerDeepLink() {
       if (!p.has('start')) return;
       window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/casovac`);
       const { timer: t, data: d } = ref.current;
-      if (t.state.status !== 'idle') return; // běžící blok nikdy nepřerušíme
+      if (!canSwitch(t.state)) return; // běžící blok nikdy nepřerušíme
       const wanted = p.get('predmet');
       const subjects = alive(d.subjects).filter((s) => !s.archived);
       const match = wanted ? subjects.find((s) => norm(s.name) === norm(wanted)) ?? subjects.find((s) => norm(s.name).startsWith(norm(wanted))) : null;
       const subjectId = match?.id ?? (subjects.some((s) => s.id === t.state.subjectId) ? t.state.subjectId : '');
       if (!subjectId) return; // bez předmětu se blok spustit nedá – stránka časovače zůstane otevřená
-      t.configure({ subjectId, ...(p.get('tema') ? { topic: p.get('tema')! } : {}) });
+      t.setup({ subjectId, ...(p.get('tema') ? { topic: p.get('tema')! } : {}) });
       t.start();
     };
     run();
