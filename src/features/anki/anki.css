@@ -42,6 +42,7 @@
   color: var(--success);
 }
 .anki-status.s-offline,
+.anki-status.s-blocked,
 .anki-status.s-error,
 .anki-status.s-denied {
   color: var(--text-3);

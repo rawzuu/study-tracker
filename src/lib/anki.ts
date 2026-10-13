@@ -15,6 +15,17 @@ function endpoint(): string {
   }
 }
 
+/**
+ * Prohlížeče, ze kterých se na AnkiConnect dostat nedá: Safari (i web přidaný do Docku) nepustí https stránku
+ * na http://127.0.0.1 ani localhost – WebKit to bere jako nezabezpečený obsah (WebKit bug 171934, ověřeno
+ * na Safari 27). Chrome, Edge i Firefox to dovolí. Na telefonu desktopová Anki neběží vůbec.
+ */
+export function ankiBlocked(ua = navigator.userAgent, protocol = location.protocol): 'phone' | 'safari' | null {
+  if (/iPhone|iPad|iPod|Android/.test(ua)) return 'phone';
+  if (protocol === 'https:' && /AppleWebKit/.test(ua) && !/Chrome|Chromium|Edg|OPR|Firefox/.test(ua)) return 'safari';
+  return null;
+}
+
 export type AnkiErrorKind = 'offline' | 'denied' | 'error';
 
 export class AnkiError extends Error {

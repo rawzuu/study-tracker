@@ -1,7 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useStore } from '../../data/store';
 import { AppData, Session } from '../../data/schema';
-import { AnkiError, clusterReviews, fetchAnki } from '../../lib/anki';
+import { AnkiError, ankiBlocked, clusterReviews, fetchAnki } from '../../lib/anki';
 import { addDays, startOfDay } from '../../lib/time';
 
 /**
@@ -15,6 +15,7 @@ export const ANKI_SUBJECT_ID = 'anki';
 export type AnkiStatus =
   | { state: 'off' }
   | { state: 'syncing' }
+  | { state: 'blocked'; reason: 'phone' | 'safari' } // tady se k Anki připojit nedá – ukazuje se stav z počítače
   | { state: 'ok'; at: number }
   | { state: 'offline' | 'denied' | 'error'; message: string; at: number };
 
@@ -120,6 +121,13 @@ export function useAnkiSync() {
   useEffect(() => {
     if (!enabled) {
       setStatus({ state: 'off' });
+      requestRun = null;
+      return;
+    }
+    const blocked = ankiBlocked();
+    if (blocked) {
+      // Zkoušet to každé 2 minuty nemá smysl – požadavek nikdy neodejde.
+      setStatus({ state: 'blocked', reason: blocked });
       requestRun = null;
       return;
     }

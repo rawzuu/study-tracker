@@ -137,3 +137,18 @@ describe('odhad času na Anki', () => {
     expect(ankiSecPerAnswer([anki(400, 3000, 1, 'pomodoro')], undefined, NOW)).toBe(10);
   });
 });
+
+describe('Anki – prohlížeče bez přístupu', () => {
+  it('Safari na https blokuje, Chrome, Edge a Firefox ne, telefon nikdy', async () => {
+    const { ankiBlocked } = await import('../lib/anki');
+    const mac = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)';
+    const safari = `${mac} Version/27.0.1 Safari/605.1.15`;
+    const chrome = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+    expect(ankiBlocked(safari, 'https:')).toBe('safari');
+    expect(ankiBlocked(safari, 'http:')).toBe(null); // místní vývojový server
+    expect(ankiBlocked(chrome, 'https:')).toBe(null);
+    expect(ankiBlocked(`${chrome} Edg/141.0.0.0`, 'https:')).toBe(null);
+    expect(ankiBlocked('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:143.0) Gecko/20100101 Firefox/143.0', 'https:')).toBe(null);
+    expect(ankiBlocked('Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1', 'https:')).toBe('phone');
+  });
+});

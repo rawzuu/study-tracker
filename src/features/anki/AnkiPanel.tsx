@@ -21,10 +21,14 @@ export function AnkiPanel({ className = '' }: { className?: string }) {
       : status.state === 'ok'
         ? `živě · ${fmtTime(status.at)}`
         : snap
-          ? `${status.state === 'off' ? 'stav' : 'Anki neběží · stav'} z ${fmtTime(snap.at)}${fresh ? '' : ` (${new Date(snap.at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })})`}`
+          ? `${status.state === 'off' || status.state === 'blocked' ? 'stav' : 'Anki neběží · stav'} z ${fmtTime(snap.at)}${fresh ? '' : ` (${new Date(snap.at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })})`}`
           : status.state === 'off'
             ? 'vypnuto'
-            : 'Anki neběží';
+            : status.state === 'blocked'
+              ? status.reason === 'safari'
+                ? 'v Safari nejde'
+                : 'jen na počítači'
+              : 'Anki neběží';
 
   return (
     <div className={`card ${className}`}>
@@ -32,7 +36,7 @@ export function AnkiPanel({ className = '' }: { className?: string }) {
         <h2>Anki dnes</h2>
         <div className="row" style={{ gap: 4 }}>
           <span className={`sub anki-status s-${status.state}`}>{statusText}</span>
-          {data.settings.anki.enabled && (
+          {data.settings.anki.enabled && status.state !== 'blocked' && (
             <button className="btn ghost icon sm" onClick={() => syncAnkiNow()} title="Načíst znovu" disabled={status.state === 'syncing'}>
               <RefreshCw size={13} className={status.state === 'syncing' ? 'spin' : ''} />
             </button>
@@ -40,9 +44,18 @@ export function AnkiPanel({ className = '' }: { className?: string }) {
         </div>
       </div>
       {!snap ? (
-        <Empty icon={<Layers size={22} strokeWidth={1.5} />} title={data.settings.anki.enabled ? 'Čekám na Anki' : 'Anki není propojená'}>
+        <Empty
+          icon={<Layers size={22} strokeWidth={1.5} />}
+          title={status.state === 'blocked' ? 'Anki se tu nenačte' : data.settings.anki.enabled ? 'Čekám na Anki' : 'Anki není propojená'}
+        >
           <a href="#/nastaveni" className="small">
-            {data.settings.anki.enabled ? 'Spusť Anki na počítači · nastavení →' : 'Propojit v Nastavení →'}
+            {status.state === 'blocked'
+              ? status.reason === 'safari'
+                ? 'Safari spojení s Anki nedovolí · víc →'
+                : 'Stav přijde z počítače · víc →'
+              : data.settings.anki.enabled
+                ? 'Spusť Anki na počítači · nastavení →'
+                : 'Propojit v Nastavení →'}
           </a>
         </Empty>
       ) : (

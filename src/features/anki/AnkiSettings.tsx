@@ -4,6 +4,7 @@ import { useStore } from '../../data/store';
 import { SUBJECT_COLORS, alive, uid } from '../../data/schema';
 import { Switch } from '../../components/ui';
 import { fmtTime, plural } from '../../lib/time';
+import { ankiBlocked } from '../../lib/anki';
 import { ANKI_SUBJECT_ID, syncAnkiNow, useAnkiStatus } from './useAnkiSync';
 
 const NEW = '__new__';
@@ -20,6 +21,7 @@ export function AnkiSettings() {
   const snap = data.anki.find((a) => a.id === 'snapshot' && !a.deletedAt);
   const subjects = alive(data.subjects).filter((s) => !s.archived && s.id !== ANKI_SUBJECT_ID);
   const set = (patch: Partial<typeof cfg>) => setSettings({ anki: { ...cfg, ...patch } });
+  const blocked = ankiBlocked();
 
   // Přiřazení balíčků k předmětům; po změně se historie přepočítá (s prodlevou, aby se změny stihly uložit).
   const recompute = useRef<number | undefined>(undefined);
@@ -62,6 +64,8 @@ export function AnkiSettings() {
           <span className="chip ok">
             <CheckCircle2 size={12} /> připojeno {fmtTime(status.at)}
           </span>
+        ) : blocked ? (
+          <span className="chip">{blocked === 'safari' ? 'v Safari nejde' : 'jen na počítači'}</span>
         ) : status.state === 'syncing' ? (
           <span className="chip">připojuji…</span>
         ) : cfg.enabled ? (
@@ -75,6 +79,17 @@ export function AnkiSettings() {
           Na přehledu uvidíš, kolik karet ti dnes zbývá, a čas strávený v Anki se započítá do statistik i kalendáře. Funguje na počítači,
           kde běží desktopová Anki. Na mobilu se zobrazí poslední stav z počítače.
         </p>
+        {blocked === 'safari' && (
+          <div className="callout warn">
+            <AlertTriangle size={15} />
+            <span className="small">
+              Safari webové stránce nedovolí spojit se s Anki na tomto počítači. Je to bezpečnostní pravidlo Safari, ne chyba Anki ani
+              aplikace. Propojení funguje v <b>Chrome, Edge nebo Firefoxu</b>: otevři tam aplikaci aspoň jednou denně, když běží Anki, a
+              opakování za včerejšek i dnešek se dopočítají. Když máš zapnutou zálohu na GitHub, stav Anki i čas pak uvidíš i tady v Safari a
+              na mobilu.
+            </span>
+          </div>
+        )}
         <div className="callout">
           <Info size={15} />
           <div className="stack tight small">
@@ -97,20 +112,22 @@ export function AnkiSettings() {
 
         {cfg.enabled && (
           <>
-            {(status.state === 'offline' || status.state === 'denied' || status.state === 'error') && (
+            {!blocked && (status.state === 'offline' || status.state === 'denied' || status.state === 'error') && (
               <div className="callout bad">
                 <AlertTriangle size={15} />
                 <span>{status.message}</span>
               </div>
             )}
-            <div className="row wrap">
-              <button className="btn" onClick={() => syncAnkiNow()} disabled={status.state === 'syncing'}>
-                <Plug size={14} /> Připojit / načíst
-              </button>
-              <button className="btn ghost" onClick={() => syncAnkiNow(true)} disabled={status.state === 'syncing'} title="Znovu načte historii a přepočítá bloky">
-                <RefreshCw size={14} /> Přepočítat historii
-              </button>
-            </div>
+            {!blocked && (
+              <div className="row wrap">
+                <button className="btn" onClick={() => syncAnkiNow()} disabled={status.state === 'syncing'}>
+                  <Plug size={14} /> Připojit / načíst
+                </button>
+                <button className="btn ghost" onClick={() => syncAnkiNow(true)} disabled={status.state === 'syncing'} title="Znovu načte historii a přepočítá bloky">
+                  <RefreshCw size={14} /> Přepočítat historii
+                </button>
+              </div>
+            )}
 
             <div className="setting-row">
               <div>
